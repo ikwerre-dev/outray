@@ -9,38 +9,81 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DashRouteImport } from './routes/dash'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashIndexRouteImport } from './routes/dash/index'
+import { Route as DashTunnelsRouteImport } from './routes/dash/tunnels'
+import { Route as DashSettingsRouteImport } from './routes/dash/settings'
 
+const DashRoute = DashRouteImport.update({
+  id: '/dash',
+  path: '/dash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashIndexRoute = DashIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashRoute,
+} as any)
+const DashTunnelsRoute = DashTunnelsRouteImport.update({
+  id: '/tunnels',
+  path: '/tunnels',
+  getParentRoute: () => DashRoute,
+} as any)
+const DashSettingsRoute = DashSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dash': typeof DashRouteWithChildren
+  '/dash/settings': typeof DashSettingsRoute
+  '/dash/tunnels': typeof DashTunnelsRoute
+  '/dash/': typeof DashIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dash/settings': typeof DashSettingsRoute
+  '/dash/tunnels': typeof DashTunnelsRoute
+  '/dash': typeof DashIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dash': typeof DashRouteWithChildren
+  '/dash/settings': typeof DashSettingsRoute
+  '/dash/tunnels': typeof DashTunnelsRoute
+  '/dash/': typeof DashIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dash' | '/dash/settings' | '/dash/tunnels' | '/dash/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dash/settings' | '/dash/tunnels' | '/dash'
+  id: '__root__' | '/' | '/dash' | '/dash/settings' | '/dash/tunnels' | '/dash/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashRoute: typeof DashRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/dash': {
+      id: '/dash'
+      path: '/dash'
+      fullPath: '/dash'
+      preLoaderRoute: typeof DashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +91,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dash/': {
+      id: '/dash/'
+      path: '/'
+      fullPath: '/dash/'
+      preLoaderRoute: typeof DashIndexRouteImport
+      parentRoute: typeof DashRoute
+    }
+    '/dash/tunnels': {
+      id: '/dash/tunnels'
+      path: '/tunnels'
+      fullPath: '/dash/tunnels'
+      preLoaderRoute: typeof DashTunnelsRouteImport
+      parentRoute: typeof DashRoute
+    }
+    '/dash/settings': {
+      id: '/dash/settings'
+      path: '/settings'
+      fullPath: '/dash/settings'
+      preLoaderRoute: typeof DashSettingsRouteImport
+      parentRoute: typeof DashRoute
+    }
   }
 }
 
+interface DashRouteChildren {
+  DashSettingsRoute: typeof DashSettingsRoute
+  DashTunnelsRoute: typeof DashTunnelsRoute
+  DashIndexRoute: typeof DashIndexRoute
+}
+
+const DashRouteChildren: DashRouteChildren = {
+  DashSettingsRoute: DashSettingsRoute,
+  DashTunnelsRoute: DashTunnelsRoute,
+  DashIndexRoute: DashIndexRoute,
+}
+
+const DashRouteWithChildren = DashRoute._addFileChildren(DashRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashRoute: DashRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
