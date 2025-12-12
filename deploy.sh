@@ -49,7 +49,7 @@ echo "🔵 Current active: $CURRENT_COLOR (or none)"
 echo "🟢 Deploying to: $TARGET_COLOR (Tunnel Server: $TARGET_NAME on Port $TARGET_PORT)"
 
 # 1. Start Tunnel Server
-BASE_DOMAIN="outray.dev" PORT=$TARGET_PORT pm2 start dist/tunnel/src/server.js --name $TARGET_NAME --update-env --force
+BASE_DOMAIN="outray.dev" PORT=$TARGET_PORT pm2 start dist/server.js --name $TARGET_NAME --update-env --force
 
 echo "⏳ Waiting for tunnel server to be ready..."
 sleep 5
