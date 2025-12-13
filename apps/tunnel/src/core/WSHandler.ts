@@ -97,9 +97,9 @@ export class WSHandler {
             }
 
             let requestedSubdomain = message.subdomain;
+            let reservationAcquired = false;
 
             if (requestedSubdomain) {
-              // Check if subdomain is available or owned by user
               const check = await this.checkSubdomain(
                 requestedSubdomain,
                 userId,
@@ -107,38 +107,74 @@ export class WSHandler {
 
               if (!check.allowed) {
                 console.log(`Subdomain denied: ${check.error}`);
-                // Fallback to random subdomain if denied? Or close?
-                // For now, let's fallback to random to be nice.
                 requestedSubdomain = undefined;
-              } else if (this.router.hasTunnel(requestedSubdomain)) {
-                console.log(
-                  `Subdomain ${requestedSubdomain} is currently active.`,
-                );
-                // If it's active, we can't take it.
-                requestedSubdomain = undefined;
+              } else {
+                reservationAcquired =
+                  await this.router.reserveTunnel(requestedSubdomain);
+
+                if (!reservationAcquired) {
+                  console.log(
+                    `Subdomain ${requestedSubdomain} is currently reserved elsewhere.`,
+                  );
+                  requestedSubdomain = undefined;
+                }
               }
             }
 
-            if (!requestedSubdomain) {
-              // Generate a random available subdomain
+            if (!reservationAcquired) {
               let attempts = 0;
-              while (!requestedSubdomain && attempts < 5) {
+              while (!reservationAcquired && attempts < 5) {
                 const candidate = generateSubdomain();
                 const check = await this.checkSubdomain(candidate);
-                if (check.allowed && !this.router.hasTunnel(candidate)) {
-                  requestedSubdomain = candidate;
+                if (check.allowed) {
+                  reservationAcquired =
+                    await this.router.reserveTunnel(candidate);
+                  if (reservationAcquired) {
+                    requestedSubdomain = candidate;
+                    break;
+                  }
                 }
                 attempts++;
               }
 
-              // Fallback to ID if generation fails (unlikely)
-              if (!requestedSubdomain) {
-                requestedSubdomain = generateId("tunnel");
+              if (!reservationAcquired) {
+                const fallback = generateId("tunnel");
+                reservationAcquired = await this.router.reserveTunnel(fallback);
+                if (reservationAcquired) {
+                  requestedSubdomain = fallback;
+                }
               }
             }
 
+            if (!reservationAcquired || !requestedSubdomain) {
+              ws.send(
+                Protocol.encode({
+                  type: "error",
+                  code: "TUNNEL_UNAVAILABLE",
+                  message:
+                    "Unable to allocate a tunnel at this time. Please try again.",
+                }),
+              );
+              ws.close();
+              return;
+            }
+
             tunnelId = requestedSubdomain;
-            this.router.registerTunnel(tunnelId, ws);
+            const registered = await this.router.registerTunnel(tunnelId, ws);
+
+            if (!registered) {
+              await this.router.unregisterTunnel(tunnelId);
+              tunnelId = null;
+              ws.send(
+                Protocol.encode({
+                  type: "error",
+                  code: "TUNNEL_UNAVAILABLE",
+                  message: "Unable to persist tunnel reservation.",
+                }),
+              );
+              ws.close();
+              return;
+            }
 
             const response = Protocol.encode({
               type: "tunnel_opened",
@@ -158,8 +194,9 @@ export class WSHandler {
 
       ws.on("close", () => {
         if (tunnelId) {
-          this.router.unregisterTunnel(tunnelId);
+          void this.router.unregisterTunnel(tunnelId);
           console.log(`Tunnel closed: ${tunnelId}`);
+          tunnelId = null;
         }
       });
 
