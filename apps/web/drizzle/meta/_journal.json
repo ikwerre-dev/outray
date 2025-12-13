@@ -8,6 +8,13 @@
       "when": 1765618230656,
       "tag": "0000_tough_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765619151616,
+      "tag": "0001_adorable_weapon_omega",
+      "breakpoints": true
     }
   ]
 }
