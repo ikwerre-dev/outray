@@ -25,7 +25,27 @@ export class WSHandler {
           if (message.type === "hello") {
             console.log(`Client connected: ${message.clientId}`);
           } else if (message.type === "open_tunnel") {
-            tunnelId = message.subdomain || generateId("tunnel");
+            if (message.apiKey) {
+              console.log(`Received API Key: ${message.apiKey}`);
+              // TODO: Validate API Key against database
+            }
+
+            const requestedSubdomain = message.subdomain;
+            if (
+              requestedSubdomain &&
+              this.router.hasTunnel(requestedSubdomain)
+            ) {
+              console.log(`Subdomain ${requestedSubdomain} is already in use.`);
+              // In a real app, we should send an error message back.
+              // For now, we'll fall back to a random ID or just fail?
+              // Let's fail for now by not opening.
+              // But the protocol doesn't have an error message type yet.
+              // We'll just generate a random one if taken, or maybe append random string.
+              tunnelId = generateId("tunnel");
+            } else {
+              tunnelId = requestedSubdomain || generateId("tunnel");
+            }
+
             this.router.registerTunnel(tunnelId, ws);
 
             const response = Protocol.encode({
