@@ -26,5 +26,14 @@ export interface TunnelResponseMessage {
   body?: string;
 }
 
-export type ServerMessage = TunnelOpenedMessage | TunnelDataMessage;
+export interface ErrorMessage {
+  type: "error";
+  code: string;
+  message: string;
+}
+
+export type ServerMessage =
+  | TunnelOpenedMessage
+  | TunnelDataMessage
+  | ErrorMessage;
 export type ClientMessage = OpenTunnelMessage | TunnelResponseMessage;
