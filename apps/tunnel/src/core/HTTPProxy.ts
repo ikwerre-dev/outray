@@ -85,7 +85,7 @@ export class HTTPProxy {
         return `<h1>${tunnelId} is offline</h1>`;
       }
 
-      return template.replace("{{TUNNEL_ID}}", tunnelId);
+      return template.replace(/{{TUNNEL_ID}}/g, tunnelId);
     } catch (error) {
       console.error("Failed to load offline page template", error);
       return `<h1>${tunnelId} is offline</h1>`;
