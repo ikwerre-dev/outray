@@ -80,7 +80,7 @@ function DashboardLayout() {
             <NavItem
               to="/dash/tunnels"
               icon={<Network size={16} />}
-              label="Tunnels"
+              label="Active Tunnels"
             />
             <NavItem
               to="/dash/requests"
