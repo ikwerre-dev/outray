@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db } from "../../../db";
-import { subdomains } from "../../../db/app-schema";
+import { subdomains, tunnels } from "../../../db/app-schema";
 
 export const Route = createFileRoute("/api/tunnel/check-subdomain")({
   server: {
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/api/tunnel/check-subdomain")({
       POST: async ({ request }) => {
         try {
           const body = await request.json();
-          const { subdomain } = body;
+          const { subdomain, organizationId } = body;
 
           if (!subdomain) {
             return json(
@@ -20,12 +20,20 @@ export const Route = createFileRoute("/api/tunnel/check-subdomain")({
           }
 
           const existingSubdomain = await db
-            .select()
+            .select({
+              subdomain: subdomains.subdomain,
+              organizationId: tunnels.organizationId,
+            })
             .from(subdomains)
+            .leftJoin(tunnels, eq(subdomains.tunnelId, tunnels.id))
             .where(eq(subdomains.subdomain, subdomain))
             .limit(1);
 
           if (existingSubdomain.length > 0) {
+            const record = existingSubdomain[0];
+            if (organizationId && record.organizationId === organizationId) {
+              return json({ allowed: true, type: "owned" });
+            }
             return json({ allowed: false, error: "Subdomain already taken" });
           }
 
