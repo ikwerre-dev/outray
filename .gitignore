@@ -5,3 +5,16 @@ dist/
 .env
 .env.local
 .output
+# ClickHouse
+data/
+flags/
+format_schemas/
+metadata/
+metadata_dropped/
+preprocessed_configs/
+status
+store/
+tmp/
+user_files/
+uuid
+clickhouse-local.log
