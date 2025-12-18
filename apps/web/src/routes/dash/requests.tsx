@@ -15,7 +15,7 @@ interface TunnelEvent {
   method: string;
   path: string;
   status_code: number;
-  latency_ms: number;
+  request_duration_ms: number;
   bytes_in: number;
   bytes_out: number;
   client_ip: string;
@@ -99,7 +99,7 @@ function RequestsView() {
                 <th className="px-4 py-3 font-medium">Path</th>
                 <th className="px-4 py-3 font-medium">Host</th>
                 <th className="px-4 py-3 font-medium">Client IP</th>
-                <th className="px-4 py-3 font-medium text-right">Latency</th>
+                <th className="px-4 py-3 font-medium text-right">Duration</th>
                 <th className="px-4 py-3 font-medium text-right">Size</th>
                 <th className="px-4 py-3 font-medium text-right">Time</th>
               </tr>
@@ -147,7 +147,7 @@ function RequestsView() {
                       {req.client_ip}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-400">
-                      {req.latency_ms}ms
+                      {req.request_duration_ms}ms
                     </td>
                     <td className="px-4 py-3 text-right text-gray-400">
                       {formatBytes(req.bytes_in + req.bytes_out)}
