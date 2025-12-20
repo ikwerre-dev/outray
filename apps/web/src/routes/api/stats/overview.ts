@@ -30,6 +30,18 @@ export const Route = createFileRoute("/api/stats/overview")({
           return json({ error: "Organization ID required" }, { status: 400 });
         }
 
+        const organizations = await auth.api.listOrganizations({
+          headers: request.headers,
+        });
+
+        const hasAccess = organizations.find(
+          (org) => org.id === organizationId,
+        );
+
+        if (!hasAccess) {
+          return json({ error: "Unauthorized" }, { status: 403 });
+        }
+
         try {
           const totalRequestsResult = await clickhouse.query({
             query: `
