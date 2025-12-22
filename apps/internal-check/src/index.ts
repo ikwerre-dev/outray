@@ -54,6 +54,18 @@ app.get("/internal/domain-check", async (req, res) => {
   console.log(`Checking domain: ${domain}`);
 
   try {
+    // 0. Allow infrastructure domains
+    const ALLOWED_INFRA_DOMAINS = [
+      "outray.app",
+      "www.outray.app",
+      "edge.outray.app",
+      "api.outray.app",
+    ];
+
+    if (ALLOWED_INFRA_DOMAINS.includes(domain)) {
+      return res.status(200).send();
+    }
+
     // 1. Check if it's a subdomain of outray.app
     if (domain.endsWith(".outray.app")) {
       const subdomain = domain.replace(".outray.app", "");
