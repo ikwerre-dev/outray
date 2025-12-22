@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/auth-tokens")({
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const token = `outray_${randomBytes(32).toString("hex")}`;
+        const token = `${randomBytes(32).toString("hex")}`;
 
         const [newToken] = await db
           .insert(authTokens)
