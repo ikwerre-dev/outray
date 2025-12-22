@@ -70,6 +70,15 @@ CLICKHOUSE_PASSWORD="$CLICKHOUSE_PASSWORD" \
 CLICKHOUSE_DATABASE="$CLICKHOUSE_DATABASE" \
 pm2 start dist/server.js --name $TARGET_NAME --update-env --force
 
+# 1.5 Start Internal Check Service
+echo "🔍 Starting Internal Check Service..."
+cd ../internal-check
+npm install --production
+DATABASE_URL="$DATABASE_URL" \
+PORT=3001 \
+pm2 start dist/index.js --name "outray-internal-check" --update-env --force
+cd $APP_DIR
+
 echo "⏳ Waiting for tunnel server to be ready..."
 sleep 5
 
@@ -85,17 +94,17 @@ echo "✅ Tunnel server is running."
 echo "🔄 Updating Caddyfile..."
 
 cat > $CADDYFILE <<EOF
-api.outray.dev {
-    tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+{
+    on_demand_tls {
+        ask http://localhost:3001/internal/domain-check
     }
-    reverse_proxy localhost:$TARGET_PORT
 }
 
-*.outray.app {
+:443 {
     tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        on_demand
     }
+
     reverse_proxy localhost:$TARGET_PORT
 }
 EOF
