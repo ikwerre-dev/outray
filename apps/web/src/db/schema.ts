@@ -27,6 +27,13 @@ import {
   organizationsAppRelations,
 } from "./app-schema";
 
+import {
+  subscriptions,
+  subscriptionUsage,
+  subscriptionsRelations,
+  subscriptionUsageRelations,
+} from "./subscription-schema";
+
 export {
   accounts,
   sessions,
@@ -42,6 +49,8 @@ export {
   subdomains,
   domains,
   authTokens,
+  subscriptions,
+  subscriptionUsage,
   tunnelsRelations,
   subdomainsRelations,
   domainsRelations,
@@ -51,4 +60,6 @@ export {
   cliLoginSessionsRelations,
   cliUserTokensRelations,
   cliOrgTokensRelations,
+  subscriptionsRelations,
+  subscriptionUsageRelations,
 };
