@@ -62,7 +62,7 @@ export class OutRayClient {
 
     this.ws.on("open", () => this.handleOpen());
     this.ws.on("message", (data) => this.handleMessage(data.toString()));
-    this.ws.on("close", () => this.handleClose());
+    this.ws.on("close", (code, reason) => this.handleClose(code, reason));
     this.ws.on("error", (error) => {
       console.log(chalk.red(`❌ WebSocket error: ${error.message}`));
     });
@@ -277,9 +277,17 @@ export class OutRayClient {
     }
   }
 
-  private handleClose(): void {
+  private handleClose(code?: number, reason?: Buffer): void {
     this.stopPing();
     if (!this.shouldReconnect) return;
+
+    const reasonStr = reason?.toString() || "";
+
+    if (code === 1000 && reasonStr === "Tunnel stopped by user") {
+      console.log(chalk.red("\n🛑 Tunnel stopped by user via dashboard."));
+      this.stop();
+      process.exit(0);
+    }
 
     console.log(chalk.yellow("😵 Disconnected from OutRay. Retrying in 2s…"));
 
