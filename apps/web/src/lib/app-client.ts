@@ -100,8 +100,8 @@ export const appClient = {
     get: async (tunnelId: string) =>
       apiCall<{ tunnel: Tunnel }>("get", `/api/tunnels/${tunnelId}`),
 
-    delete: async (tunnelId: string) =>
-      apiCall<{ message: string }>("delete", `/api/tunnels/${tunnelId}`),
+    stop: async (tunnelId: string) =>
+      apiCall<{ message: string }>("post", `/api/tunnels/${tunnelId}/stop`),
   },
 
   authTokens: {
