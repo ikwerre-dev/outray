@@ -130,6 +130,7 @@ export class HTTPProxy {
           timestamp: Date.now(),
           tunnel_id: metadata.dbTunnelId || tunnelId,
           organization_id: metadata.organizationId,
+          retention_days: metadata.retentionDays || 3,
           host: host,
           method: req.method || "GET",
           path: req.url || "/",
