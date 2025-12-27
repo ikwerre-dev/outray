@@ -1,18 +1,31 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 import { authClient } from "../../lib/auth-client";
-import { User, Mail, Shield, Building2 } from "lucide-react";
+import { User, Building2 } from "lucide-react";
 
 export const Route = createFileRoute("/dash/settings")({
-  component: SettingsView,
+  component: SettingsLayout,
 });
 
-function SettingsView() {
+function SettingsLayout() {
   const { data: session } = authClient.useSession();
   const user = session?.user;
 
   if (!user) {
     return null;
   }
+
+  const tabs = [
+    {
+      to: "/dash/settings/profile",
+      label: "Profile",
+      icon: User,
+    },
+    {
+      to: "/dash/settings/organization",
+      label: "Organization",
+      icon: Building2,
+    },
+  ];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -27,127 +40,25 @@ function SettingsView() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Profile Section */}
-        <div className="bg-white/2 border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <User className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white">Profile</h3>
-                <p className="text-sm text-gray-500">
-                  Your personal information
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h4 className="text-white font-medium text-lg">{user.name}</h4>
-                <p className="text-gray-500">{user.email}</p>
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
-                    value={user.name || ""}
-                    readOnly
-                    className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-white/20 transition-colors cursor-not-allowed opacity-75"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="email"
-                    value={user.email || ""}
-                    readOnly
-                    className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-white/20 transition-colors cursor-not-allowed opacity-75"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Account Security */}
-        <div className="bg-white/2 border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <Shield className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white">Security</h3>
-                <p className="text-sm text-gray-500">
-                  Manage your account security
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <h4 className="text-white font-medium">Password</h4>
-                <p className="text-sm text-gray-500">
-                  Last changed 3 months ago
-                </p>
-              </div>
-              <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-colors border border-white/10">
-                Change Password
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Organization */}
-        <div className="bg-white/2 border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white">Organization</h3>
-                <p className="text-sm text-gray-500">
-                  Manage your organization settings
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <h4 className="text-white font-medium">Current Organization</h4>
-                <p className="text-sm text-gray-500">
-                  You are currently viewing the dashboard as a member of this
-                  organization.
-                </p>
-              </div>
-              <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-colors border border-white/10">
-                Manage Organization
-              </button>
-            </div>
-          </div>
+      <div className="border-b border-white/10">
+        <div className="flex items-center gap-6">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className="flex items-center gap-2 pb-3 text-sm font-medium transition-colors border-b-2 border-transparent hover:text-white text-gray-400"
+              activeProps={{
+                className: "!text-white !border-white",
+              }}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </Link>
+          ))}
         </div>
       </div>
+
+      <Outlet />
     </div>
   );
 }

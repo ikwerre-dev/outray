@@ -19,6 +19,9 @@ import { NavItem } from "./sidebar/nav-item";
 import { OrganizationDropdown } from "./sidebar/organization-dropdown";
 import { PlanUsage } from "./sidebar/plan-usage";
 import { UserSection } from "./sidebar/user-section";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { getPlanLimits } from "../lib/subscription-plans";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -33,6 +36,23 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
   const { data: session } = authClient.useSession();
   const user = session?.user;
+
+  const { data: subscriptionData } = useQuery({
+    queryKey: ["subscription", selectedOrganizationId],
+    queryFn: async () => {
+      if (!selectedOrganizationId) return null;
+      const response = await axios.get(
+        `/api/subscriptions/${selectedOrganizationId}`,
+      );
+      return response.data;
+    },
+    enabled: !!selectedOrganizationId,
+  });
+
+  const subscription = subscriptionData?.subscription;
+  const currentPlan = subscription?.plan || "free";
+  const planLimits = getPlanLimits(currentPlan as any);
+  const tunnelLimit = planLimits.maxTunnels;
 
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -111,11 +131,6 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           to: "/dash/members",
           label: "Members",
           icon: <Users size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/dash/activity",
-          label: "Activity",
-          icon: <Activity size={NAV_ICON_SIZE} />,
         },
       ],
     },
@@ -196,6 +211,8 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         <PlanUsage
           activeTunnelsCount={activeTunnelsCount}
           isCollapsed={isCollapsed}
+          limit={tunnelLimit}
+          currentPlan={currentPlan}
         />
 
         <UserSection user={user} isCollapsed={isCollapsed} />

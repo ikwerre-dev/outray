@@ -24,15 +24,17 @@ import { Route as DashMembersRouteImport } from './routes/dash/members'
 import { Route as DashInstallRouteImport } from './routes/dash/install'
 import { Route as DashDomainsRouteImport } from './routes/dash/domains'
 import { Route as DashBillingRouteImport } from './routes/dash/billing'
-import { Route as DashActivityRouteImport } from './routes/dash/activity'
 import { Route as CliLoginRouteImport } from './routes/cli.login'
 import { Route as ApiSubdomainsRouteImport } from './routes/api/subdomains'
 import { Route as ApiRequestsRouteImport } from './routes/api/requests'
 import { Route as ApiAuthTokensRouteImport } from './routes/api/auth-tokens'
 import { Route as DashTunnelsIndexRouteImport } from './routes/dash/tunnels/index'
+import { Route as DashSettingsIndexRouteImport } from './routes/dash/settings/index'
 import { Route as ApiTunnelsIndexRouteImport } from './routes/api/tunnels/index'
 import { Route as ApiDomainsIndexRouteImport } from './routes/api/domains/index'
 import { Route as DashTunnelsTunnelIdRouteImport } from './routes/dash/tunnels/$tunnelId'
+import { Route as DashSettingsProfileRouteImport } from './routes/dash/settings/profile'
+import { Route as DashSettingsOrganizationRouteImport } from './routes/dash/settings/organization'
 import { Route as ApiWebhooksPolarRouteImport } from './routes/api/webhooks/polar'
 import { Route as ApiTunnelsTunnelIdRouteImport } from './routes/api/tunnels/$tunnelId'
 import { Route as ApiTunnelRegisterRouteImport } from './routes/api/tunnel/register'
@@ -134,11 +136,6 @@ const DashBillingRoute = DashBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashRoute,
 } as any)
-const DashActivityRoute = DashActivityRouteImport.update({
-  id: '/activity',
-  path: '/activity',
-  getParentRoute: () => DashRoute,
-} as any)
 const CliLoginRoute = CliLoginRouteImport.update({
   id: '/cli/login',
   path: '/cli/login',
@@ -164,6 +161,11 @@ const DashTunnelsIndexRoute = DashTunnelsIndexRouteImport.update({
   path: '/tunnels/',
   getParentRoute: () => DashRoute,
 } as any)
+const DashSettingsIndexRoute = DashSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashSettingsRoute,
+} as any)
 const ApiTunnelsIndexRoute = ApiTunnelsIndexRouteImport.update({
   id: '/api/tunnels/',
   path: '/api/tunnels/',
@@ -179,6 +181,17 @@ const DashTunnelsTunnelIdRoute = DashTunnelsTunnelIdRouteImport.update({
   path: '/tunnels/$tunnelId',
   getParentRoute: () => DashRoute,
 } as any)
+const DashSettingsProfileRoute = DashSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => DashSettingsRoute,
+} as any)
+const DashSettingsOrganizationRoute =
+  DashSettingsOrganizationRouteImport.update({
+    id: '/organization',
+    path: '/organization',
+    getParentRoute: () => DashSettingsRoute,
+  } as any)
 const ApiWebhooksPolarRoute = ApiWebhooksPolarRouteImport.update({
   id: '/api/webhooks/polar',
   path: '/api/webhooks/polar',
@@ -320,13 +333,12 @@ export interface FileRoutesByFullPath {
   '/api/requests': typeof ApiRequestsRoute
   '/api/subdomains': typeof ApiSubdomainsRouteWithChildren
   '/cli/login': typeof CliLoginRoute
-  '/dash/activity': typeof DashActivityRoute
   '/dash/billing': typeof DashBillingRoute
   '/dash/domains': typeof DashDomainsRoute
   '/dash/install': typeof DashInstallRoute
   '/dash/members': typeof DashMembersRoute
   '/dash/requests': typeof DashRequestsRoute
-  '/dash/settings': typeof DashSettingsRoute
+  '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/subdomains': typeof DashSubdomainsRoute
   '/internal/domain-check': typeof InternalDomainCheckRoute
   '/invitations/accept': typeof InvitationsAcceptRoute
@@ -353,9 +365,12 @@ export interface FileRoutesByFullPath {
   '/api/tunnel/register': typeof ApiTunnelRegisterRoute
   '/api/tunnels/$tunnelId': typeof ApiTunnelsTunnelIdRouteWithChildren
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
+  '/dash/settings/organization': typeof DashSettingsOrganizationRoute
+  '/dash/settings/profile': typeof DashSettingsProfileRoute
   '/dash/tunnels/$tunnelId': typeof DashTunnelsTunnelIdRoute
   '/api/domains': typeof ApiDomainsIndexRoute
   '/api/tunnels': typeof ApiTunnelsIndexRoute
+  '/dash/settings/': typeof DashSettingsIndexRoute
   '/dash/tunnels': typeof DashTunnelsIndexRoute
   '/api/cli/login/status': typeof ApiCliLoginStatusRoute
   '/api/domains/$domainId/verify': typeof ApiDomainsDomainIdVerifyRoute
@@ -370,13 +385,11 @@ export interface FileRoutesByTo {
   '/api/requests': typeof ApiRequestsRoute
   '/api/subdomains': typeof ApiSubdomainsRouteWithChildren
   '/cli/login': typeof CliLoginRoute
-  '/dash/activity': typeof DashActivityRoute
   '/dash/billing': typeof DashBillingRoute
   '/dash/domains': typeof DashDomainsRoute
   '/dash/install': typeof DashInstallRoute
   '/dash/members': typeof DashMembersRoute
   '/dash/requests': typeof DashRequestsRoute
-  '/dash/settings': typeof DashSettingsRoute
   '/dash/subdomains': typeof DashSubdomainsRoute
   '/internal/domain-check': typeof InternalDomainCheckRoute
   '/invitations/accept': typeof InvitationsAcceptRoute
@@ -403,9 +416,12 @@ export interface FileRoutesByTo {
   '/api/tunnel/register': typeof ApiTunnelRegisterRoute
   '/api/tunnels/$tunnelId': typeof ApiTunnelsTunnelIdRouteWithChildren
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
+  '/dash/settings/organization': typeof DashSettingsOrganizationRoute
+  '/dash/settings/profile': typeof DashSettingsProfileRoute
   '/dash/tunnels/$tunnelId': typeof DashTunnelsTunnelIdRoute
   '/api/domains': typeof ApiDomainsIndexRoute
   '/api/tunnels': typeof ApiTunnelsIndexRoute
+  '/dash/settings': typeof DashSettingsIndexRoute
   '/dash/tunnels': typeof DashTunnelsIndexRoute
   '/api/cli/login/status': typeof ApiCliLoginStatusRoute
   '/api/domains/$domainId/verify': typeof ApiDomainsDomainIdVerifyRoute
@@ -422,13 +438,12 @@ export interface FileRoutesById {
   '/api/requests': typeof ApiRequestsRoute
   '/api/subdomains': typeof ApiSubdomainsRouteWithChildren
   '/cli/login': typeof CliLoginRoute
-  '/dash/activity': typeof DashActivityRoute
   '/dash/billing': typeof DashBillingRoute
   '/dash/domains': typeof DashDomainsRoute
   '/dash/install': typeof DashInstallRoute
   '/dash/members': typeof DashMembersRoute
   '/dash/requests': typeof DashRequestsRoute
-  '/dash/settings': typeof DashSettingsRoute
+  '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/subdomains': typeof DashSubdomainsRoute
   '/internal/domain-check': typeof InternalDomainCheckRoute
   '/invitations/accept': typeof InvitationsAcceptRoute
@@ -455,9 +470,12 @@ export interface FileRoutesById {
   '/api/tunnel/register': typeof ApiTunnelRegisterRoute
   '/api/tunnels/$tunnelId': typeof ApiTunnelsTunnelIdRouteWithChildren
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
+  '/dash/settings/organization': typeof DashSettingsOrganizationRoute
+  '/dash/settings/profile': typeof DashSettingsProfileRoute
   '/dash/tunnels/$tunnelId': typeof DashTunnelsTunnelIdRoute
   '/api/domains/': typeof ApiDomainsIndexRoute
   '/api/tunnels/': typeof ApiTunnelsIndexRoute
+  '/dash/settings/': typeof DashSettingsIndexRoute
   '/dash/tunnels/': typeof DashTunnelsIndexRoute
   '/api/cli/login/status': typeof ApiCliLoginStatusRoute
   '/api/domains/$domainId/verify': typeof ApiDomainsDomainIdVerifyRoute
@@ -475,7 +493,6 @@ export interface FileRouteTypes {
     | '/api/requests'
     | '/api/subdomains'
     | '/cli/login'
-    | '/dash/activity'
     | '/dash/billing'
     | '/dash/domains'
     | '/dash/install'
@@ -508,9 +525,12 @@ export interface FileRouteTypes {
     | '/api/tunnel/register'
     | '/api/tunnels/$tunnelId'
     | '/api/webhooks/polar'
+    | '/dash/settings/organization'
+    | '/dash/settings/profile'
     | '/dash/tunnels/$tunnelId'
     | '/api/domains'
     | '/api/tunnels'
+    | '/dash/settings/'
     | '/dash/tunnels'
     | '/api/cli/login/status'
     | '/api/domains/$domainId/verify'
@@ -525,13 +545,11 @@ export interface FileRouteTypes {
     | '/api/requests'
     | '/api/subdomains'
     | '/cli/login'
-    | '/dash/activity'
     | '/dash/billing'
     | '/dash/domains'
     | '/dash/install'
     | '/dash/members'
     | '/dash/requests'
-    | '/dash/settings'
     | '/dash/subdomains'
     | '/internal/domain-check'
     | '/invitations/accept'
@@ -558,9 +576,12 @@ export interface FileRouteTypes {
     | '/api/tunnel/register'
     | '/api/tunnels/$tunnelId'
     | '/api/webhooks/polar'
+    | '/dash/settings/organization'
+    | '/dash/settings/profile'
     | '/dash/tunnels/$tunnelId'
     | '/api/domains'
     | '/api/tunnels'
+    | '/dash/settings'
     | '/dash/tunnels'
     | '/api/cli/login/status'
     | '/api/domains/$domainId/verify'
@@ -576,7 +597,6 @@ export interface FileRouteTypes {
     | '/api/requests'
     | '/api/subdomains'
     | '/cli/login'
-    | '/dash/activity'
     | '/dash/billing'
     | '/dash/domains'
     | '/dash/install'
@@ -609,9 +629,12 @@ export interface FileRouteTypes {
     | '/api/tunnel/register'
     | '/api/tunnels/$tunnelId'
     | '/api/webhooks/polar'
+    | '/dash/settings/organization'
+    | '/dash/settings/profile'
     | '/dash/tunnels/$tunnelId'
     | '/api/domains/'
     | '/api/tunnels/'
+    | '/dash/settings/'
     | '/dash/tunnels/'
     | '/api/cli/login/status'
     | '/api/domains/$domainId/verify'
@@ -762,13 +785,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashBillingRouteImport
       parentRoute: typeof DashRoute
     }
-    '/dash/activity': {
-      id: '/dash/activity'
-      path: '/activity'
-      fullPath: '/dash/activity'
-      preLoaderRoute: typeof DashActivityRouteImport
-      parentRoute: typeof DashRoute
-    }
     '/cli/login': {
       id: '/cli/login'
       path: '/cli/login'
@@ -804,6 +820,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashTunnelsIndexRouteImport
       parentRoute: typeof DashRoute
     }
+    '/dash/settings/': {
+      id: '/dash/settings/'
+      path: '/'
+      fullPath: '/dash/settings/'
+      preLoaderRoute: typeof DashSettingsIndexRouteImport
+      parentRoute: typeof DashSettingsRoute
+    }
     '/api/tunnels/': {
       id: '/api/tunnels/'
       path: '/api/tunnels'
@@ -824,6 +847,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dash/tunnels/$tunnelId'
       preLoaderRoute: typeof DashTunnelsTunnelIdRouteImport
       parentRoute: typeof DashRoute
+    }
+    '/dash/settings/profile': {
+      id: '/dash/settings/profile'
+      path: '/profile'
+      fullPath: '/dash/settings/profile'
+      preLoaderRoute: typeof DashSettingsProfileRouteImport
+      parentRoute: typeof DashSettingsRoute
+    }
+    '/dash/settings/organization': {
+      id: '/dash/settings/organization'
+      path: '/organization'
+      fullPath: '/dash/settings/organization'
+      preLoaderRoute: typeof DashSettingsOrganizationRouteImport
+      parentRoute: typeof DashSettingsRoute
     }
     '/api/webhooks/polar': {
       id: '/api/webhooks/polar'
@@ -1003,14 +1040,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashSettingsRouteChildren {
+  DashSettingsOrganizationRoute: typeof DashSettingsOrganizationRoute
+  DashSettingsProfileRoute: typeof DashSettingsProfileRoute
+  DashSettingsIndexRoute: typeof DashSettingsIndexRoute
+}
+
+const DashSettingsRouteChildren: DashSettingsRouteChildren = {
+  DashSettingsOrganizationRoute: DashSettingsOrganizationRoute,
+  DashSettingsProfileRoute: DashSettingsProfileRoute,
+  DashSettingsIndexRoute: DashSettingsIndexRoute,
+}
+
+const DashSettingsRouteWithChildren = DashSettingsRoute._addFileChildren(
+  DashSettingsRouteChildren,
+)
+
 interface DashRouteChildren {
-  DashActivityRoute: typeof DashActivityRoute
   DashBillingRoute: typeof DashBillingRoute
   DashDomainsRoute: typeof DashDomainsRoute
   DashInstallRoute: typeof DashInstallRoute
   DashMembersRoute: typeof DashMembersRoute
   DashRequestsRoute: typeof DashRequestsRoute
-  DashSettingsRoute: typeof DashSettingsRoute
+  DashSettingsRoute: typeof DashSettingsRouteWithChildren
   DashSubdomainsRoute: typeof DashSubdomainsRoute
   DashIndexRoute: typeof DashIndexRoute
   DashTunnelsTunnelIdRoute: typeof DashTunnelsTunnelIdRoute
@@ -1018,13 +1070,12 @@ interface DashRouteChildren {
 }
 
 const DashRouteChildren: DashRouteChildren = {
-  DashActivityRoute: DashActivityRoute,
   DashBillingRoute: DashBillingRoute,
   DashDomainsRoute: DashDomainsRoute,
   DashInstallRoute: DashInstallRoute,
   DashMembersRoute: DashMembersRoute,
   DashRequestsRoute: DashRequestsRoute,
-  DashSettingsRoute: DashSettingsRoute,
+  DashSettingsRoute: DashSettingsRouteWithChildren,
   DashSubdomainsRoute: DashSubdomainsRoute,
   DashIndexRoute: DashIndexRoute,
   DashTunnelsTunnelIdRoute: DashTunnelsTunnelIdRoute,
