@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAppStore } from "../lib/store";
-import { appClient } from "../lib/app-client";
+import { useAppStore } from "../../lib/store";
+import { appClient } from "../../lib/app-client";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";

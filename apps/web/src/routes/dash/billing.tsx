@@ -156,32 +156,27 @@ function BillingView() {
               )}
             </div>
 
-            <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Tunnels</p>
-                <p className="text-lg font-semibold text-white">
-                  - / {planLimits.maxTunnels}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Domains</p>
-                <p className="text-lg font-semibold text-white">
-                  - /{" "}
-                  {planLimits.maxDomains === -1 ? "∞" : planLimits.maxDomains}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Subdomains</p>
-                <p className="text-lg font-semibold text-white">
-                  - / {planLimits.maxSubdomains}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Members</p>
-                <p className="text-lg font-semibold text-white">
-                  - / {planLimits.maxMembers}
-                </p>
-              </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <MetricBar
+                label="Tunnels"
+                value={data?.usage?.tunnels}
+                limit={planLimits.maxTunnels}
+              />
+              <MetricBar
+                label="Domains"
+                value={data?.usage?.domains}
+                limit={planLimits.maxDomains}
+              />
+              <MetricBar
+                label="Subdomains"
+                value={data?.usage?.subdomains}
+                limit={planLimits.maxSubdomains}
+              />
+              <MetricBar
+                label="Members"
+                value={data?.usage?.members}
+                limit={planLimits.maxMembers}
+              />
             </div>
           </div>
 
@@ -345,6 +340,36 @@ function PlanCard({
         >
           {current ? "Current Plan" : "Upgrade"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function MetricBar({
+  label,
+  value,
+  limit,
+}: {
+  label: string;
+  value?: number;
+  limit: number;
+}) {
+  const percentage =
+    limit === -1 ? 0 : Math.min(100, Math.max(0, ((value || 0) / limit) * 100));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-gray-500">{label}</span>
+        <span className="text-xs font-medium text-white">
+          {value ?? "-"} / {limit === -1 ? "∞" : limit}
+        </span>
+      </div>
+      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-accent transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%` }}
+        />
       </div>
     </div>
   );

@@ -24,7 +24,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useState } from "react";
-import { BandwidthUsage } from "../../components/BandwidthUsage";
+import { BandwidthUsage } from "../../components/sidebar/bandwidth-usage";
 
 export const Route = createFileRoute("/dash/")({
   component: OverviewView,
