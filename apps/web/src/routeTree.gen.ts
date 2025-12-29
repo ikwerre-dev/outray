@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SelectRouteImport } from './routes/select'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -63,6 +64,11 @@ import { Route as ApiTunnelsTunnelIdStopRouteImport } from './routes/api/tunnels
 import { Route as ApiDomainsDomainIdVerifyRouteImport } from './routes/api/domains/$domainId.verify'
 import { Route as ApiCliLoginStatusRouteImport } from './routes/api/cli/login/status'
 
+const SelectRoute = SelectRouteImport.update({
+  id: '/select',
+  path: '/select',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -341,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/select': typeof SelectRoute
   '/$orgSlug/billing': typeof OrgSlugBillingRoute
   '/$orgSlug/domains': typeof OrgSlugDomainsRoute
   '/$orgSlug/install': typeof OrgSlugInstallRoute
@@ -395,6 +402,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/select': typeof SelectRoute
   '/$orgSlug/billing': typeof OrgSlugBillingRoute
   '/$orgSlug/domains': typeof OrgSlugDomainsRoute
   '/$orgSlug/install': typeof OrgSlugInstallRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/select': typeof SelectRoute
   '/$orgSlug/billing': typeof OrgSlugBillingRoute
   '/$orgSlug/domains': typeof OrgSlugDomainsRoute
   '/$orgSlug/install': typeof OrgSlugInstallRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/onboarding'
+    | '/select'
     | '/$orgSlug/billing'
     | '/$orgSlug/domains'
     | '/$orgSlug/install'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/onboarding'
+    | '/select'
     | '/$orgSlug/billing'
     | '/$orgSlug/domains'
     | '/$orgSlug/install'
@@ -615,6 +626,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/onboarding'
+    | '/select'
     | '/$orgSlug/billing'
     | '/$orgSlug/domains'
     | '/$orgSlug/install'
@@ -671,6 +683,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  SelectRoute: typeof SelectRoute
   ApiAuthTokensRoute: typeof ApiAuthTokensRoute
   ApiRequestsRoute: typeof ApiRequestsRoute
   ApiSearchRoute: typeof ApiSearchRoute
@@ -706,6 +719,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/select': {
+      id: '/select'
+      path: '/select'
+      fullPath: '/select'
+      preLoaderRoute: typeof SelectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -1177,6 +1197,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  SelectRoute: SelectRoute,
   ApiAuthTokensRoute: ApiAuthTokensRoute,
   ApiRequestsRoute: ApiRequestsRoute,
   ApiSearchRoute: ApiSearchRoute,

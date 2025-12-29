@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Github, LayoutDashboard, LogIn, Activity } from "lucide-react";
+import { LayoutDashboard, LogIn, Activity } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 import { DeveloperExperience } from "./developer-experience";
@@ -7,6 +7,7 @@ import { NetworkDiagram } from "./network-diagram";
 import { BringYourOwnDomain } from "./bring-your-own-domain";
 import { OpenSource } from "./opensource";
 import { Hero } from "./hero";
+import { SiGithub } from "react-icons/si";
 
 export const Landing = () => {
   const { data: session } = authClient.useSession();
@@ -21,8 +22,7 @@ export const Landing = () => {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-accent/30">
-      {/* Navigation */}
-      <nav
+      <div
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-black/80 backdrop-blur-md border-b border-white/5 py-4"
@@ -38,9 +38,9 @@ export const Landing = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-white/60">
-            <a href="#docs" className="hover:text-white transition-colors">
+            <Link to="/docs/$" className="hover:text-white transition-colors">
               Documentation
-            </a>
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -50,7 +50,7 @@ export const Landing = () => {
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-2 text-white/60 hover:text-white transition-colors"
             >
-              <Github size={20} />
+              <SiGithub size={20} />
             </a>
             {session ? (
               <Link
@@ -74,7 +74,7 @@ export const Landing = () => {
             )}
           </div>
         </div>
-      </nav>
+      </div>
 
       <Hero />
 

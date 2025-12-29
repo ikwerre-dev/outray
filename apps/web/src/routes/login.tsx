@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 import { FaGithub, FaGoogle } from "react-icons/fa";
 import { useState } from "react";
@@ -15,6 +15,11 @@ export const Route = createFileRoute("/login")({
 function RouteComponent() {
   const [loading, setLoading] = useState<string | null>(null);
   const { redirect } = Route.useSearch();
+  const { data: session } = authClient.useSession();
+
+  if (session?.user) {
+    return <Navigate to="/select" />;
+  }
 
   const handleLogin = async (provider: "github" | "google") => {
     setLoading(provider);
