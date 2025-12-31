@@ -1,3 +1,5 @@
+export type TunnelProtocol = "http" | "tcp" | "udp";
+
 export interface HelloMessage {
   type: "hello";
   clientId: string;
@@ -10,6 +12,8 @@ export interface OpenTunnelMessage {
   customDomain?: string;
   apiKey?: string;
   forceTakeover?: boolean;
+  protocol?: TunnelProtocol;
+  remotePort?: number; // For TCP/UDP: the port to expose on the server
 }
 
 export interface TunnelOpenedMessage {
@@ -17,6 +21,41 @@ export interface TunnelOpenedMessage {
   tunnelId: string;
   url: string;
   plan?: string;
+  protocol?: TunnelProtocol;
+  port?: number; // For TCP/UDP: the assigned port on the server
+}
+
+// TCP/UDP specific messages
+export interface TCPConnectionMessage {
+  type: "tcp_connection";
+  connectionId: string;
+}
+
+export interface TCPDataMessage {
+  type: "tcp_data";
+  connectionId: string;
+  data: string; // base64 encoded
+}
+
+export interface TCPCloseMessage {
+  type: "tcp_close";
+  connectionId: string;
+}
+
+export interface UDPDataMessage {
+  type: "udp_data";
+  packetId: string;
+  sourceAddress: string;
+  sourcePort: number;
+  data: string; // base64 encoded
+}
+
+export interface UDPResponseMessage {
+  type: "udp_response";
+  packetId: string;
+  targetAddress: string;
+  targetPort: number;
+  data: string; // base64 encoded
 }
 
 export interface RequestMessage {
@@ -58,4 +97,9 @@ export type Message =
   | ResponseMessage
   | PingMessage
   | PongMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | TCPConnectionMessage
+  | TCPDataMessage
+  | TCPCloseMessage
+  | UDPDataMessage
+  | UDPResponseMessage;

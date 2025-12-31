@@ -48,12 +48,8 @@ export const Route = createFileRoute("/api/subscriptions/$organizationId")({
                 .select({ value: count() })
                 .from(members)
                 .where(eq(members.organizationId, organizationId)),
-              // Live tunnels are tracked in Redis zset per org
-              (async () => {
-                const zsetKey = `org:${organizationId}:active_tunnels`;
-                await redis.zremrangebyscore(zsetKey, "-inf", Date.now());
-                return await redis.zcard(zsetKey);
-              })(),
+              // Live tunnels are tracked in Redis SET per org
+              redis.scard(`org:${organizationId}:online_tunnels`),
             ]);
 
           return new Response(

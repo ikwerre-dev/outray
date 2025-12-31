@@ -308,10 +308,21 @@ function TunnelsView() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium text-white truncate">
-                        {tunnel.name || new URL(tunnel.url).hostname}
+                        {tunnel.name ||
+                          (tunnel.protocol === "http"
+                            ? new URL(tunnel.url).hostname
+                            : `${tunnel.protocol?.toUpperCase()} Port ${tunnel.remotePort}`)}
                       </h3>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-500 border border-green-500/20 shrink-0">
-                        HTTP
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${
+                          tunnel.protocol === "tcp"
+                            ? "bg-purple-500/10 text-purple-500 border border-purple-500/20"
+                            : tunnel.protocol === "udp"
+                              ? "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                              : "bg-green-500/10 text-green-500 border border-green-500/20"
+                        }`}
+                      >
+                        {(tunnel.protocol || "http").toUpperCase()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">

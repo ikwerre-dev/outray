@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index, integer } from "drizzle-orm/pg-core";
 import { users, organizations } from "./auth-schema";
 
 export const tunnels = pgTable(
@@ -8,10 +8,14 @@ export const tunnels = pgTable(
     id: text("id").primaryKey(),
     url: text("url").notNull().unique(),
     name: text("name"),
+    protocol: text("protocol").notNull().default("http"), // http, tcp, udp
+    remotePort: integer("remote_port"), // For TCP/UDP tunnels
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organizations.id, {
+      onDelete: "cascade",
+    }),
     lastSeenAt: timestamp("last_seen_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -141,9 +145,12 @@ export const usersAppRelations = relations(users, ({ many }) => ({
   domains: many(domains),
 }));
 
-export const organizationsAppRelations = relations(organizations, ({ many }) => ({
-  tunnels: many(tunnels),
-  authTokens: many(authTokens),
-  subdomains: many(subdomains),
-  domains: many(domains),
-}));
+export const organizationsAppRelations = relations(
+  organizations,
+  ({ many }) => ({
+    tunnels: many(tunnels),
+    authTokens: many(authTokens),
+    subdomains: many(subdomains),
+    domains: many(domains),
+  }),
+);

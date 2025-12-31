@@ -77,7 +77,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          source: "deploy.sh"
+          source: "deploy.sh,deploy/setup_clickhouse.sql"
           target: "/root/outray"
 
       - name: Restart Server (Blue/Green)

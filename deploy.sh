@@ -25,6 +25,18 @@ cd $APP_DIR
 # Install Server dependencies
 npm install --production
 
+# Apply ClickHouse schema updates (idempotent - uses CREATE IF NOT EXISTS)
+echo "📊 Applying ClickHouse schema updates..."
+if [ -f "../deploy/setup_clickhouse.sql" ]; then
+    curl -sS "$CLICKHOUSE_URL" \
+        --user "$CLICKHOUSE_USER:$CLICKHOUSE_PASSWORD" \
+        -d @../deploy/setup_clickhouse.sql \
+        && echo "✅ ClickHouse schema applied." \
+        || echo "⚠️ ClickHouse schema update failed (non-critical, tables may already exist)"
+else
+    echo "⚠️ setup_clickhouse.sql not found, skipping schema update"
+fi
+
 # Determine which instance is currently running
 if pm2 list | grep -q "$BLUE_NAME.*online"; then
   CURRENT_COLOR="blue"

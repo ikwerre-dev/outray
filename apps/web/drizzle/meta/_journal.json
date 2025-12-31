@@ -50,6 +50,13 @@
       "when": 1766652995655,
       "tag": "0006_orange_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767144677047,
+      "tag": "0007_nasty_dazzler",
+      "breakpoints": true
     }
   ]
 }

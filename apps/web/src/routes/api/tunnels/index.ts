@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { auth } from "../../../lib/auth";
 import { db } from "../../../db";
 import { tunnels } from "../../../db/app-schema";
@@ -34,53 +34,43 @@ export const Route = createFileRoute("/api/tunnels/")({
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const userTunnels = await db
-          .select({
-            id: tunnels.id,
-            url: tunnels.url,
-            name: tunnels.name,
-            userId: tunnels.userId,
-            lastSeenAt: tunnels.lastSeenAt,
-            createdAt: tunnels.createdAt,
-            updatedAt: tunnels.updatedAt,
-          })
-          .from(tunnels)
-          .where(eq(tunnels.organizationId, organizationId));
-
-        const tunnelsWithStatus = await Promise.all(
-          userTunnels.map(async (tunnel) => {
-            let tunnelId = "";
-            try {
-              const urlObj = new URL(
-                tunnel.url.startsWith("http")
-                  ? tunnel.url
-                  : `https://${tunnel.url}`,
-              );
-              // Use full hostname as tunnel ID (e.g., "passive-robin.outray.app" or "test.outray.co")
-              tunnelId = urlObj.hostname;
-            } catch (e) {
-              console.error("Failed to parse tunnel URL:", tunnel.url);
-            }
-
-            const isOnline = tunnelId
-              ? await redis.exists(`tunnel:online:${tunnelId}`)
-              : false;
-            return {
-              id: tunnel.id,
-              url: tunnel.url,
-              userId: tunnel.userId,
-              name: tunnel.name,
-              isOnline,
-              lastSeenAt: tunnel.lastSeenAt,
-              createdAt: tunnel.createdAt,
-              updatedAt: tunnel.updatedAt,
-            };
-          }),
+        // Get online tunnel IDs from Redis SET
+        const onlineIds = await redis.smembers(
+          `org:${organizationId}:online_tunnels`,
         );
 
-        const activeTunnels = tunnelsWithStatus.filter((t) => t.isOnline);
+        if (onlineIds.length === 0) {
+          return json({ tunnels: [] });
+        }
 
-        return json({ tunnels: activeTunnels });
+        // Fetch tunnels from Postgres
+        const dbTunnels = await db
+          .select()
+          .from(tunnels)
+          .where(inArray(tunnels.id, onlineIds));
+
+        // Batch fetch lastSeen timestamps
+        const lastSeenKeys = onlineIds.map((id) => `tunnel:last_seen:${id}`);
+        const lastSeenValues = await redis.mget(...lastSeenKeys);
+        const lastSeenMap = new Map(
+          onlineIds.map((id, i) => [id, lastSeenValues[i]]),
+        );
+
+        // Map to response
+        const result = dbTunnels.map((t) => ({
+          id: t.id,
+          url: t.url,
+          userId: t.userId,
+          name: t.name,
+          protocol: t.protocol || "http",
+          remotePort: t.remotePort,
+          isOnline: true,
+          lastSeenAt: new Date(Number(lastSeenMap.get(t.id)) || Date.now()),
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+        }));
+
+        return json({ tunnels: result });
       },
     },
   },

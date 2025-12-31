@@ -1,14 +1,25 @@
-import { Activity, Clock } from "lucide-react";
+import { Activity, Clock, Zap } from "lucide-react";
 
 interface TunnelTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  protocol?: string;
 }
 
-export function TunnelTabs({ activeTab, setActiveTab }: TunnelTabsProps) {
+export function TunnelTabs({
+  activeTab,
+  setActiveTab,
+  protocol,
+}: TunnelTabsProps) {
+  const isProtocolTunnel = protocol === "tcp" || protocol === "udp";
+
   const tabs = [
     { id: "overview", label: "Overview", icon: Activity },
-    { id: "requests", label: "Requests", icon: Clock },
+    {
+      id: "requests",
+      label: isProtocolTunnel ? "Events" : "Requests",
+      icon: isProtocolTunnel ? Zap : Clock,
+    },
     // { id: "security", label: "Security", icon: Shield },
     // { id: "settings", label: "Settings", icon: Settings },
   ];

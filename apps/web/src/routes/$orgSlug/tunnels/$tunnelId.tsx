@@ -11,6 +11,8 @@ import { AlertTriangle } from "lucide-react";
 import { TunnelHeader } from "@/components/tunnel-details/tunnel-header";
 import { TunnelTabs } from "@/components/tunnel-details/tunnel-tabs";
 import { TunnelOverview } from "@/components/tunnel-details/tunnel-overview";
+import { ProtocolOverview } from "@/components/tunnel-details/protocol-overview";
+import { ProtocolEvents } from "@/components/tunnel-details/protocol-events";
 import { TunnelRequests } from "@/components/tunnel-details/tunnel-requests";
 
 export const Route = createFileRoute("/$orgSlug/tunnels/$tunnelId")({
@@ -44,6 +46,12 @@ function TunnelDetailView() {
     },
   });
 
+  const tunnel =
+    tunnelData && "tunnel" in tunnelData ? tunnelData.tunnel : null;
+  const isProtocolTunnel =
+    tunnel?.protocol === "tcp" || tunnel?.protocol === "udp";
+
+  // HTTP stats query
   const {
     data: statsData,
     isLoading: statsLoading,
@@ -57,10 +65,25 @@ function TunnelDetailView() {
     },
     refetchInterval: 5000,
     placeholderData: keepPreviousData,
+    enabled: !isProtocolTunnel,
   });
 
-  const tunnel =
-    tunnelData && "tunnel" in tunnelData ? tunnelData.tunnel : null;
+  // Protocol stats query (TCP/UDP)
+  const { data: protocolStatsData, isLoading: protocolStatsLoading } = useQuery(
+    {
+      queryKey: ["protocolStats", tunnelId, timeRange],
+      queryFn: async () => {
+        const response = await fetch(
+          `/api/stats/protocol?tunnelId=${tunnelId}&range=${timeRange}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch protocol stats");
+        return response.json();
+      },
+      refetchInterval: 5000,
+      enabled: isProtocolTunnel,
+    },
+  );
+
   const stats = statsData && "stats" in statsData ? statsData.stats : null;
   const chartData =
     statsData && "chartData" in statsData ? statsData.chartData : [];
@@ -71,7 +94,9 @@ function TunnelDetailView() {
     });
   };
 
-  if (tunnelLoading || statsLoading) {
+  const isLoadingStats = isProtocolTunnel ? protocolStatsLoading : statsLoading;
+
+  if (tunnelLoading || (isLoadingStats && !tunnel)) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-pulse">
         <div className="h-20 bg-white/5 rounded-xl" />
@@ -118,10 +143,26 @@ function TunnelDetailView() {
           isStopping={stopMutation.isPending}
         />
 
-        <TunnelTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <TunnelTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          protocol={tunnel.protocol}
+        />
       </div>
 
-      {activeTab === "overview" && (
+      {activeTab === "overview" && isProtocolTunnel && (
+        <ProtocolOverview
+          protocol={tunnel.protocol as "tcp" | "udp"}
+          stats={protocolStatsData?.stats || null}
+          chartData={protocolStatsData?.chartData || []}
+          recentEvents={protocolStatsData?.recentEvents || []}
+          timeRange={timeRange}
+          setTimeRange={setTimeRange}
+          isLoading={protocolStatsLoading}
+        />
+      )}
+
+      {activeTab === "overview" && !isProtocolTunnel && (
         <TunnelOverview
           stats={stats}
           chartData={chartData}
@@ -131,7 +172,16 @@ function TunnelDetailView() {
         />
       )}
 
-      {activeTab === "requests" && <TunnelRequests tunnelId={tunnelId} />}
+      {activeTab === "requests" && isProtocolTunnel && (
+        <ProtocolEvents
+          tunnelId={tunnelId}
+          protocol={tunnel.protocol as "tcp" | "udp"}
+        />
+      )}
+
+      {activeTab === "requests" && !isProtocolTunnel && (
+        <TunnelRequests tunnelId={tunnelId} />
+      )}
     </div>
   );
 }

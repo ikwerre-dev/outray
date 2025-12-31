@@ -144,6 +144,11 @@ export class OutRayClient {
           this.shouldReconnect = false;
           this.stop();
           process.exit(1);
+        } else if (message.code === "LIMIT_EXCEEDED") {
+          console.log(chalk.red(`❌ Error: ${message.message}`));
+          this.shouldReconnect = false;
+          this.stop();
+          process.exit(1);
         } else {
           console.log(chalk.red(`❌ Error: ${message.message}`));
         }
@@ -156,6 +161,7 @@ export class OutRayClient {
   }
 
   private handleTunnelData(message: TunnelDataMessage): void {
+    const startTime = Date.now();
     const reqOptions = {
       hostname: "localhost",
       port: this.localPort,
@@ -172,6 +178,22 @@ export class OutRayClient {
       });
 
       res.on("end", () => {
+        const duration = Date.now() - startTime;
+        const statusCode = res.statusCode || 200;
+        const statusColor =
+          statusCode >= 500
+            ? chalk.red
+            : statusCode >= 400
+              ? chalk.yellow
+              : statusCode >= 300
+                ? chalk.cyan
+                : chalk.green;
+
+        console.log(
+          chalk.dim("←") +
+            ` ${chalk.bold(message.method)} ${message.path} ${statusColor(statusCode)} ${chalk.dim(`${duration}ms`)}`,
+        );
+
         const bodyBuffer = Buffer.concat(chunks);
         const bodyBase64 =
           bodyBuffer.length > 0 ? bodyBuffer.toString("base64") : undefined;
@@ -179,7 +201,7 @@ export class OutRayClient {
         const response: TunnelResponseMessage = {
           type: "response",
           requestId: message.requestId,
-          statusCode: res.statusCode || 200,
+          statusCode: statusCode,
           headers: res.headers as any,
           body: bodyBase64,
         };
@@ -189,6 +211,12 @@ export class OutRayClient {
     });
 
     req.on("error", (err) => {
+      const duration = Date.now() - startTime;
+      console.log(
+        chalk.dim("←") +
+          ` ${chalk.bold(message.method)} ${message.path} ${chalk.red("502")} ${chalk.dim(`${duration}ms`)} ${chalk.red(err.message)}`,
+      );
+
       const errorResponse: TunnelResponseMessage = {
         type: "response",
         requestId: message.requestId,

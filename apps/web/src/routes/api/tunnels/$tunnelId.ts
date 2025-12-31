@@ -40,17 +40,32 @@ export const Route = createFileRoute("/api/tunnels/$tunnelId")({
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 
+        // Determine the Redis key for online status based on protocol
         let onlineTunnelId = "";
-        try {
-          const urlObj = new URL(
-            tunnel.url.startsWith("http")
-              ? tunnel.url
-              : `https://${tunnel.url}`,
-          );
-          // Use full hostname as tunnel ID (e.g., "passive-robin.outray.app" or "test.outray.co")
-          onlineTunnelId = urlObj.hostname;
-        } catch (e) {
-          console.error("Failed to parse tunnel URL:", tunnel.url);
+        const protocol = tunnel.protocol || "http";
+
+        if (protocol === "tcp" || protocol === "udp") {
+          // For TCP/UDP, the tunnel name is stored directly (e.g., "rational-chipmunk")
+          // Extract from URL like "tcp://rational-chipmunk.localhost.direct:20001"
+          try {
+            const urlObj = new URL(tunnel.url);
+            const hostParts = urlObj.hostname.split(".");
+            onlineTunnelId = hostParts[0]; // Just the adjective-noun part
+          } catch (e) {
+            console.error("Failed to parse tunnel URL:", tunnel.url);
+          }
+        } else {
+          // For HTTP, use full hostname
+          try {
+            const urlObj = new URL(
+              tunnel.url.startsWith("http")
+                ? tunnel.url
+                : `https://${tunnel.url}`,
+            );
+            onlineTunnelId = urlObj.hostname;
+          } catch (e) {
+            console.error("Failed to parse tunnel URL:", tunnel.url);
+          }
         }
 
         const isOnline = onlineTunnelId
@@ -63,6 +78,8 @@ export const Route = createFileRoute("/api/tunnels/$tunnelId")({
             url: tunnel.url,
             userId: tunnel.userId,
             name: tunnel.name,
+            protocol,
+            remotePort: tunnel.remotePort,
             isOnline: !!isOnline,
             lastSeenAt: tunnel.lastSeenAt,
             createdAt: tunnel.createdAt,

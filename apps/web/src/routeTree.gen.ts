@@ -45,6 +45,7 @@ import { Route as ApiTunnelAuthRouteImport } from './routes/api/tunnel/auth'
 import { Route as ApiSubscriptionsOrganizationIdRouteImport } from './routes/api/subscriptions/$organizationId'
 import { Route as ApiSubdomainsSubdomainIdRouteImport } from './routes/api/subdomains/$subdomainId'
 import { Route as ApiStatsTunnelRouteImport } from './routes/api/stats/tunnel'
+import { Route as ApiStatsProtocolRouteImport } from './routes/api/stats/protocol'
 import { Route as ApiStatsOverviewRouteImport } from './routes/api/stats/overview'
 import { Route as ApiStatsBandwidthRouteImport } from './routes/api/stats/bandwidth'
 import { Route as ApiPortalPolarRouteImport } from './routes/api/portal/polar'
@@ -248,6 +249,11 @@ const ApiStatsTunnelRoute = ApiStatsTunnelRouteImport.update({
   path: '/api/stats/tunnel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStatsProtocolRoute = ApiStatsProtocolRouteImport.update({
+  id: '/api/stats/protocol',
+  path: '/api/stats/protocol',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStatsOverviewRoute = ApiStatsOverviewRouteImport.update({
   id: '/api/stats/overview',
   path: '/api/stats/overview',
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/api/portal/polar': typeof ApiPortalPolarRoute
   '/api/stats/bandwidth': typeof ApiStatsBandwidthRoute
   '/api/stats/overview': typeof ApiStatsOverviewRoute
+  '/api/stats/protocol': typeof ApiStatsProtocolRoute
   '/api/stats/tunnel': typeof ApiStatsTunnelRoute
   '/api/subdomains/$subdomainId': typeof ApiSubdomainsSubdomainIdRoute
   '/api/subscriptions/$organizationId': typeof ApiSubscriptionsOrganizationIdRoute
@@ -451,6 +458,7 @@ export interface FileRoutesByTo {
   '/api/portal/polar': typeof ApiPortalPolarRoute
   '/api/stats/bandwidth': typeof ApiStatsBandwidthRoute
   '/api/stats/overview': typeof ApiStatsOverviewRoute
+  '/api/stats/protocol': typeof ApiStatsProtocolRoute
   '/api/stats/tunnel': typeof ApiStatsTunnelRoute
   '/api/subdomains/$subdomainId': typeof ApiSubdomainsSubdomainIdRoute
   '/api/subscriptions/$organizationId': typeof ApiSubscriptionsOrganizationIdRoute
@@ -510,6 +518,7 @@ export interface FileRoutesById {
   '/api/portal/polar': typeof ApiPortalPolarRoute
   '/api/stats/bandwidth': typeof ApiStatsBandwidthRoute
   '/api/stats/overview': typeof ApiStatsOverviewRoute
+  '/api/stats/protocol': typeof ApiStatsProtocolRoute
   '/api/stats/tunnel': typeof ApiStatsTunnelRoute
   '/api/subdomains/$subdomainId': typeof ApiSubdomainsSubdomainIdRoute
   '/api/subscriptions/$organizationId': typeof ApiSubscriptionsOrganizationIdRoute
@@ -570,6 +579,7 @@ export interface FileRouteTypes {
     | '/api/portal/polar'
     | '/api/stats/bandwidth'
     | '/api/stats/overview'
+    | '/api/stats/protocol'
     | '/api/stats/tunnel'
     | '/api/subdomains/$subdomainId'
     | '/api/subscriptions/$organizationId'
@@ -626,6 +636,7 @@ export interface FileRouteTypes {
     | '/api/portal/polar'
     | '/api/stats/bandwidth'
     | '/api/stats/overview'
+    | '/api/stats/protocol'
     | '/api/stats/tunnel'
     | '/api/subdomains/$subdomainId'
     | '/api/subscriptions/$organizationId'
@@ -684,6 +695,7 @@ export interface FileRouteTypes {
     | '/api/portal/polar'
     | '/api/stats/bandwidth'
     | '/api/stats/overview'
+    | '/api/stats/protocol'
     | '/api/stats/tunnel'
     | '/api/subdomains/$subdomainId'
     | '/api/subscriptions/$organizationId'
@@ -731,6 +743,7 @@ export interface RootRouteChildren {
   ApiPortalPolarRoute: typeof ApiPortalPolarRoute
   ApiStatsBandwidthRoute: typeof ApiStatsBandwidthRoute
   ApiStatsOverviewRoute: typeof ApiStatsOverviewRoute
+  ApiStatsProtocolRoute: typeof ApiStatsProtocolRoute
   ApiStatsTunnelRoute: typeof ApiStatsTunnelRoute
   ApiSubscriptionsOrganizationIdRoute: typeof ApiSubscriptionsOrganizationIdRoute
   ApiTunnelAuthRoute: typeof ApiTunnelAuthRoute
@@ -994,6 +1007,13 @@ declare module '@tanstack/react-router' {
       path: '/api/stats/tunnel'
       fullPath: '/api/stats/tunnel'
       preLoaderRoute: typeof ApiStatsTunnelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stats/protocol': {
+      id: '/api/stats/protocol'
+      path: '/api/stats/protocol'
+      fullPath: '/api/stats/protocol'
+      preLoaderRoute: typeof ApiStatsProtocolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/stats/overview': {
@@ -1262,6 +1282,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPortalPolarRoute: ApiPortalPolarRoute,
   ApiStatsBandwidthRoute: ApiStatsBandwidthRoute,
   ApiStatsOverviewRoute: ApiStatsOverviewRoute,
+  ApiStatsProtocolRoute: ApiStatsProtocolRoute,
   ApiStatsTunnelRoute: ApiStatsTunnelRoute,
   ApiSubscriptionsOrganizationIdRoute: ApiSubscriptionsOrganizationIdRoute,
   ApiTunnelAuthRoute: ApiTunnelAuthRoute,

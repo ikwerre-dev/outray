@@ -65,10 +65,9 @@ export const Route = createFileRoute("/api/stats/overview")({
 
           const totalRequestsResult = await clickhouse.query({
             query: `
-              SELECT count() as total
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${interval}
+              SELECT 
+                (SELECT count() FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) +
+                (SELECT count() FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
@@ -79,11 +78,9 @@ export const Route = createFileRoute("/api/stats/overview")({
 
           const requestsYesterdayResult = await clickhouse.query({
             query: `
-              SELECT count() as total
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${prevIntervalStart}
-                AND timestamp < now64() - INTERVAL ${prevIntervalEnd}
+              SELECT 
+                (SELECT count() FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${prevIntervalStart} AND timestamp < now64() - INTERVAL ${prevIntervalEnd}) +
+                (SELECT count() FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${prevIntervalStart} AND timestamp < now64() - INTERVAL ${prevIntervalEnd}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
@@ -96,10 +93,9 @@ export const Route = createFileRoute("/api/stats/overview")({
 
           const recentRequestsResult = await clickhouse.query({
             query: `
-              SELECT count() as total
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${interval}
+              SELECT 
+                (SELECT count() FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) +
+                (SELECT count() FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
@@ -118,66 +114,45 @@ export const Route = createFileRoute("/api/stats/overview")({
           const dataTransferResult = await clickhouse.query({
             query: `
               SELECT 
-                sum(bytes_in) as total_in,
-                sum(bytes_out) as total_out
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${interval}
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) +
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
           });
           const dataTransferData = (await dataTransferResult.json()) as Array<{
-            total_in: string;
-            total_out: string;
+            total: string;
           }>;
-          const totalBytesIn = Number(dataTransferData[0]?.total_in || 0);
-          const totalBytesOut = Number(dataTransferData[0]?.total_out || 0);
-          const totalBytes = totalBytesIn + totalBytesOut;
+          const totalBytes = Number(dataTransferData[0]?.total || 0);
 
           const dataYesterdayResult = await clickhouse.query({
             query: `
               SELECT 
-                sum(bytes_in) as total_in,
-                sum(bytes_out) as total_out
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${prevIntervalStart}
-                AND timestamp < now64() - INTERVAL ${prevIntervalEnd}
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${prevIntervalStart} AND timestamp < now64() - INTERVAL ${prevIntervalEnd}) +
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${prevIntervalStart} AND timestamp < now64() - INTERVAL ${prevIntervalEnd}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
           });
           const dataYesterdayData =
             (await dataYesterdayResult.json()) as Array<{
-              total_in: string;
-              total_out: string;
+              total: string;
             }>;
-          const bytesYesterdayIn = Number(dataYesterdayData[0]?.total_in || 0);
-          const bytesYesterdayOut = Number(
-            dataYesterdayData[0]?.total_out || 0,
-          );
-          const bytesYesterday = bytesYesterdayIn + bytesYesterdayOut;
+          const bytesYesterday = Number(dataYesterdayData[0]?.total || 0);
 
           const dataRecentResult = await clickhouse.query({
             query: `
               SELECT 
-                sum(bytes_in) as total_in,
-                sum(bytes_out) as total_out
-              FROM tunnel_events
-              WHERE organization_id = {organizationId:String}
-                AND timestamp >= now64() - INTERVAL ${interval}
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM tunnel_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) +
+                (SELECT sum(bytes_in) + sum(bytes_out) FROM protocol_events WHERE organization_id = {organizationId:String} AND timestamp >= now64() - INTERVAL ${interval}) as total
             `,
             query_params: { organizationId },
             format: "JSONEachRow",
           });
           const dataRecentData = (await dataRecentResult.json()) as Array<{
-            total_in: string;
-            total_out: string;
+            total: string;
           }>;
-          const bytesRecentIn = Number(dataRecentData[0]?.total_in || 0);
-          const bytesRecentOut = Number(dataRecentData[0]?.total_out || 0);
-          const bytesRecent = bytesRecentIn + bytesRecentOut;
+          const bytesRecent = Number(dataRecentData[0]?.total || 0);
 
           const dataTransferChange =
             bytesYesterday > 0
@@ -186,28 +161,39 @@ export const Route = createFileRoute("/api/stats/overview")({
                 ? 100
                 : 0;
 
-          // Get active tunnels count from Redis ZSET
-          const zsetKey = `org:${organizationId}:active_tunnels`;
-          // Remove expired entries
-          await redis.zremrangebyscore(zsetKey, "-inf", Date.now());
-          // Count active tunnels
-          const activeTunnelsCount = await redis.zcard(zsetKey);
+          // Get active tunnels count from Redis SET
+          const activeTunnelsCount = await redis.scard(
+            `org:${organizationId}:online_tunnels`,
+          );
 
-          // Get chart data based on time range
+          // Get chart data based on time range (combining HTTP and protocol events)
           let chartQuery = "";
           if (timeRange === "1h") {
             chartQuery = `
               WITH times AS (
                 SELECT toStartOfMinute(now64() - INTERVAL number MINUTE) as time
                 FROM numbers(60)
+              ),
+              http_counts AS (
+                SELECT toStartOfMinute(timestamp) as time, count() as cnt
+                FROM tunnel_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL 1 HOUR
+                GROUP BY time
+              ),
+              protocol_counts AS (
+                SELECT toStartOfMinute(timestamp) as time, count() as cnt
+                FROM protocol_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL 1 HOUR
+                GROUP BY time
               )
               SELECT 
                 t.time as time,
-                countIf(e.organization_id = {organizationId:String}) as requests
+                COALESCE(h.cnt, 0) + COALESCE(p.cnt, 0) as requests
               FROM times t
-              LEFT JOIN tunnel_events e ON toStartOfMinute(e.timestamp) = t.time
-                AND e.organization_id = {organizationId:String}
-              GROUP BY t.time
+              LEFT JOIN http_counts h ON t.time = h.time
+              LEFT JOIN protocol_counts p ON t.time = p.time
               ORDER BY t.time ASC
             `;
           } else if (timeRange === "24h") {
@@ -215,14 +201,27 @@ export const Route = createFileRoute("/api/stats/overview")({
               WITH times AS (
                 SELECT toStartOfHour(now64() - INTERVAL number HOUR) as time
                 FROM numbers(24)
+              ),
+              http_counts AS (
+                SELECT toStartOfHour(timestamp) as time, count() as cnt
+                FROM tunnel_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL 24 HOUR
+                GROUP BY time
+              ),
+              protocol_counts AS (
+                SELECT toStartOfHour(timestamp) as time, count() as cnt
+                FROM protocol_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL 24 HOUR
+                GROUP BY time
               )
               SELECT 
                 t.time as time,
-                countIf(e.organization_id = {organizationId:String}) as requests
+                COALESCE(h.cnt, 0) + COALESCE(p.cnt, 0) as requests
               FROM times t
-              LEFT JOIN tunnel_events e ON toStartOfHour(e.timestamp) = t.time
-                AND e.organization_id = {organizationId:String}
-              GROUP BY t.time
+              LEFT JOIN http_counts h ON t.time = h.time
+              LEFT JOIN protocol_counts p ON t.time = p.time
               ORDER BY t.time ASC
             `;
           } else {
@@ -232,14 +231,27 @@ export const Route = createFileRoute("/api/stats/overview")({
               WITH times AS (
                 SELECT toStartOfDay(now64() - INTERVAL number DAY) as time
                 FROM numbers(${days})
+              ),
+              http_counts AS (
+                SELECT toStartOfDay(timestamp) as time, count() as cnt
+                FROM tunnel_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL ${days} DAY
+                GROUP BY time
+              ),
+              protocol_counts AS (
+                SELECT toStartOfDay(timestamp) as time, count() as cnt
+                FROM protocol_events
+                WHERE organization_id = {organizationId:String}
+                  AND timestamp >= now64() - INTERVAL ${days} DAY
+                GROUP BY time
               )
               SELECT 
                 t.time as time,
-                countIf(e.organization_id = {organizationId:String}) as requests
+                COALESCE(h.cnt, 0) + COALESCE(p.cnt, 0) as requests
               FROM times t
-              LEFT JOIN tunnel_events e ON toStartOfDay(e.timestamp) = t.time
-                AND e.organization_id = {organizationId:String}
-              GROUP BY t.time
+              LEFT JOIN http_counts h ON t.time = h.time
+              LEFT JOIN protocol_counts p ON t.time = p.time
               ORDER BY t.time ASC
             `;
           }

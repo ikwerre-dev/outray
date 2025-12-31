@@ -2,6 +2,8 @@
 
 import chalk from "chalk";
 import { OutRayClient } from "./client";
+import { TCPTunnelClient } from "./tcp-client";
+import { UDPTunnelClient } from "./udp-client";
 import { ConfigManager, OutRayConfig } from "./config";
 import { AuthManager } from "./auth";
 import { version } from "../package.json";
@@ -228,7 +230,10 @@ async function getOrgSlugForDisplay(
 function printHelp() {
   console.log(chalk.cyan("\nUsage:"));
   console.log(chalk.cyan("  outray login           Login via browser"));
-  console.log(chalk.cyan("  outray <port>          Start tunnel"));
+  console.log(chalk.cyan("  outray <port>          Start HTTP tunnel"));
+  console.log(chalk.cyan("  outray http <port>     Start HTTP tunnel"));
+  console.log(chalk.cyan("  outray tcp <port>      Start TCP tunnel"));
+  console.log(chalk.cyan("  outray udp <port>      Start UDP tunnel"));
   console.log(chalk.cyan("  outray switch [org]    Switch organization"));
   console.log(chalk.cyan("  outray whoami          Show current user"));
   console.log(chalk.cyan("  outray logout          Logout"));
@@ -236,8 +241,13 @@ function printHelp() {
   console.log(chalk.cyan("  outray help            Show this help message"));
   console.log(chalk.cyan("\nOptions:"));
   console.log(chalk.cyan("  --org <slug>           Use specific org"));
-  console.log(chalk.cyan("  --subdomain <name>     Custom subdomain"));
-  console.log(chalk.cyan("  --domain <domain>      Custom domain"));
+  console.log(
+    chalk.cyan("  --subdomain <name>     Custom subdomain (HTTP only)"),
+  );
+  console.log(chalk.cyan("  --domain <domain>      Custom domain (HTTP only)"));
+  console.log(
+    chalk.cyan("  --remote-port <port>   Remote port (TCP/UDP only)"),
+  );
   console.log(chalk.cyan("  --key <token>          Override auth token"));
   console.log(chalk.cyan("  --dev                  Use dev environment"));
   console.log(chalk.cyan("  -v, --version          Show version"));
@@ -309,6 +319,7 @@ async function main() {
   // Parse tunnel command
   let localPort: number;
   let remainingArgs: string[];
+  let tunnelProtocol: "http" | "tcp" | "udp" = "http";
 
   if (command === "http") {
     const portArg = args[1];
@@ -319,6 +330,27 @@ async function main() {
     }
     localPort = parseInt(portArg, 10);
     remainingArgs = args.slice(2);
+    tunnelProtocol = "http";
+  } else if (command === "tcp") {
+    const portArg = args[1];
+    if (!portArg) {
+      console.log(chalk.red("❌ Please specify a port"));
+      console.log(chalk.cyan("Usage: outray tcp <port>"));
+      process.exit(1);
+    }
+    localPort = parseInt(portArg, 10);
+    remainingArgs = args.slice(2);
+    tunnelProtocol = "tcp";
+  } else if (command === "udp") {
+    const portArg = args[1];
+    if (!portArg) {
+      console.log(chalk.red("❌ Please specify a port"));
+      console.log(chalk.cyan("Usage: outray udp <port>"));
+      process.exit(1);
+    }
+    localPort = parseInt(portArg, 10);
+    remainingArgs = args.slice(2);
+    tunnelProtocol = "udp";
   } else if (!isNaN(parseInt(command, 10))) {
     localPort = parseInt(command, 10);
     remainingArgs = args.slice(1);
@@ -357,6 +389,22 @@ async function main() {
       const domainIndex = remainingArgs.indexOf(domainArg);
       if (domainIndex !== -1 && remainingArgs[domainIndex + 1]) {
         customDomain = remainingArgs[domainIndex + 1];
+      }
+    }
+  }
+
+  // Handle --remote-port flag for TCP/UDP tunnels
+  let remotePort: number | undefined;
+  const remotePortArg = remainingArgs.find((arg) =>
+    arg.startsWith("--remote-port"),
+  );
+  if (remotePortArg) {
+    if (remotePortArg.includes("=")) {
+      remotePort = parseInt(remotePortArg.split("=")[1], 10);
+    } else {
+      const remotePortIndex = remainingArgs.indexOf(remotePortArg);
+      if (remotePortIndex !== -1 && remainingArgs[remotePortIndex + 1]) {
+        remotePort = parseInt(remainingArgs[remotePortIndex + 1], 10);
       }
     }
   }
@@ -441,13 +489,34 @@ async function main() {
     }
   }
 
-  const client = new OutRayClient(
-    localPort!,
-    serverUrl,
-    apiKey,
-    subdomain,
-    customDomain,
-  );
+  let client: OutRayClient | TCPTunnelClient | UDPTunnelClient;
+
+  if (tunnelProtocol === "tcp") {
+    client = new TCPTunnelClient(
+      localPort!,
+      serverUrl,
+      apiKey,
+      "localhost",
+      remotePort,
+    );
+  } else if (tunnelProtocol === "udp") {
+    client = new UDPTunnelClient(
+      localPort!,
+      serverUrl,
+      apiKey,
+      "localhost",
+      remotePort,
+    );
+  } else {
+    client = new OutRayClient(
+      localPort!,
+      serverUrl,
+      apiKey,
+      subdomain,
+      customDomain,
+    );
+  }
+
   client.start();
 
   process.on("SIGINT", () => {

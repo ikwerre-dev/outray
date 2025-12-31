@@ -17,19 +17,52 @@ export const Route = createFileRoute("/api/tunnel/register")({
             userId?: string;
             organizationId?: string;
             url?: string;
+            protocol?: "http" | "tcp" | "udp";
+            remotePort?: number;
+            tunnelId?: string;
+            name?: string;
           };
 
-          const { userId, organizationId, url } = body;
+          const {
+            userId,
+            organizationId,
+            url,
+            protocol = "http",
+            remotePort,
+            tunnelId: providedTunnelId,
+            name,
+          } = body;
 
-          if (!url || !userId || !organizationId) {
+          if (!userId || !organizationId) {
             return json({ error: "Missing required fields" }, { status: 400 });
           }
 
-          // Get the tunnel ID from the URL (hostname)
-          const urlObj = new URL(
-            url.startsWith("http") ? url : `https://${url}`,
-          );
-          const tunnelId = urlObj.hostname;
+          // For all protocols, we need url
+          if (!url) {
+            return json({ error: "Missing URL for tunnel" }, { status: 400 });
+          }
+
+          // For TCP/UDP, we also need tunnelId and remotePort
+          if (
+            (protocol === "tcp" || protocol === "udp") &&
+            (!providedTunnelId || !remotePort)
+          ) {
+            return json(
+              { error: "Missing tunnelId or remotePort for TCP/UDP tunnel" },
+              { status: 400 },
+            );
+          }
+
+          // Get the tunnel ID from the URL (hostname) for HTTP, or use provided for TCP/UDP
+          let tunnelId: string;
+          if (protocol === "http") {
+            const urlObj = new URL(
+              url!.startsWith("http") ? url! : `https://${url}`,
+            );
+            tunnelId = urlObj.hostname;
+          } else {
+            tunnelId = providedTunnelId!;
+          }
 
           // Check subscription limits
           const [subscription] = await db
@@ -41,16 +74,16 @@ export const Route = createFileRoute("/api/tunnel/register")({
           const planLimits = getPlanLimits(currentPlan as any);
           const tunnelLimit = planLimits.maxTunnels;
 
-          const zsetKey = `org:${organizationId}:active_tunnels`;
+          const setKey = `org:${organizationId}:online_tunnels`;
 
-          // Remove expired entries from Redis
-          await redis.zremrangebyscore(zsetKey, "-inf", Date.now().toString());
+          // Use the URL passed from the tunnel server
+          const tunnelUrl = url;
 
-          // Check if tunnel with this URL already exists in database (reconnection check)
+          // Check if tunnel already exists in database
           const [existingTunnel] = await db
             .select()
             .from(tunnels)
-            .where(eq(tunnels.url, url));
+            .where(eq(tunnels.url, tunnelUrl));
 
           const isReconnection = !!existingTunnel;
 
@@ -66,17 +99,17 @@ export const Route = createFileRoute("/api/tunnel/register")({
 
           // Check limits only for NEW tunnels (not reconnections)
           if (!isReconnection) {
-            // Count active tunnels from Redis ONLY
-            const activeCount = await redis.zcard(zsetKey);
+            // Count active tunnels from Redis SET
+            const activeCount = await redis.scard(setKey);
             console.log(
               `[TUNNEL LIMIT CHECK] Active count in Redis: ${activeCount}`,
             );
 
-            // Since reserveTunnel was already called, the current tunnel is in Redis
-            // So we need to check if activeCount > limit (not >=)
-            if (activeCount > tunnelLimit) {
+            // The current tunnel is NOT yet in the online_tunnels set (added after successful registration)
+            // So we check if activeCount >= limit (not >)
+            if (activeCount >= tunnelLimit) {
               console.log(
-                `[TUNNEL LIMIT CHECK] REJECTED - ${activeCount} > ${tunnelLimit}`,
+                `[TUNNEL LIMIT CHECK] REJECTED - ${activeCount} >= ${tunnelLimit}`,
               );
               return json(
                 {
@@ -86,7 +119,7 @@ export const Route = createFileRoute("/api/tunnel/register")({
               );
             }
             console.log(
-              `[TUNNEL LIMIT CHECK] ALLOWED - ${activeCount} <= ${tunnelLimit}`,
+              `[TUNNEL LIMIT CHECK] ALLOWED - ${activeCount} < ${tunnelLimit}`,
             );
           } else {
             console.log(`[TUNNEL LIMIT CHECK] SKIPPED - Reconnection detected`);
@@ -105,13 +138,15 @@ export const Route = createFileRoute("/api/tunnel/register")({
             });
           }
 
-          // Create new tunnel record with full URL
+          // Create new tunnel record
           const tunnelRecord = {
             id: randomUUID(),
-            url,
+            url: tunnelUrl,
             userId,
             organizationId,
-            name: null,
+            name: name || null,
+            protocol,
+            remotePort: remotePort || null,
             lastSeenAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),

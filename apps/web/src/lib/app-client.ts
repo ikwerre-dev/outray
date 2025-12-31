@@ -12,6 +12,8 @@ export interface Tunnel {
   url: string;
   userId: string;
   name: string | null;
+  protocol: "http" | "tcp" | "udp";
+  remotePort: number | null;
   isOnline: boolean;
   lastSeenAt: Date | null;
   createdAt: Date;

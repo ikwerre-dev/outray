@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/tunnel/check-subdomain")({
       POST: async ({ request }) => {
         try {
           const body = await request.json();
-          const { subdomain, organizationId } = body;
+          const { subdomain, organizationId, checkLimit = false } = body;
 
           if (!subdomain) {
             return json(
@@ -38,8 +38,9 @@ export const Route = createFileRoute("/api/tunnel/check-subdomain")({
             return json({ allowed: false, error: "Subdomain already taken" });
           }
 
-          // Check limits if organizationId is provided
-          if (organizationId) {
+          // Only check limits if explicitly requested (for subdomain reservation, not tunnel use)
+          // For tunnel creation, we don't count against reserved subdomain limits
+          if (organizationId && checkLimit) {
             const [subscription] = await db
               .select()
               .from(subscriptions)

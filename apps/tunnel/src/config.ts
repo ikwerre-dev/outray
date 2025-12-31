@@ -19,4 +19,9 @@ export const config = {
     password: process.env.CLICKHOUSE_PASSWORD || "",
     database: process.env.CLICKHOUSE_DATABASE || "default",
   },
+  // TCP/UDP port ranges
+  tcpPortRangeMin: parseInt(process.env.TCP_PORT_RANGE_MIN || "20000", 10),
+  tcpPortRangeMax: parseInt(process.env.TCP_PORT_RANGE_MAX || "30000", 10),
+  udpPortRangeMin: parseInt(process.env.UDP_PORT_RANGE_MIN || "30001", 10),
+  udpPortRangeMax: parseInt(process.env.UDP_PORT_RANGE_MAX || "40000", 10),
 };
