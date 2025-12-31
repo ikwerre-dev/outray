@@ -28,8 +28,8 @@ npm install --production
 # Apply ClickHouse schema updates (idempotent - uses CREATE IF NOT EXISTS)
 echo "📊 Applying ClickHouse schema updates..."
 if [ -f "../deploy/setup_clickhouse.sql" ]; then
-    # Run each statement separately using clickhouse-client style with multiquery
-    curl -sS "$CLICKHOUSE_URL" \
+    # Use multiquery=1 to run multiple statements in one request
+    curl -sS "${CLICKHOUSE_URL}?multiquery=1" \
         --user "$CLICKHOUSE_USER:$CLICKHOUSE_PASSWORD" \
         --data-binary @../deploy/setup_clickhouse.sql \
         && echo "✅ ClickHouse schema applied." \
