@@ -83,69 +83,54 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
   const NAV_ICON_SIZE = 14;
 
-  const navSections = [
+  const navItems = [
     {
-      title: "Platform",
-      items: [
-        {
-          to: "/$orgSlug",
-          label: "Overview",
-          icon: <LayoutDashboard size={NAV_ICON_SIZE} />,
-          activeOptions: { exact: true },
-        },
-        {
-          to: "/$orgSlug/tunnels",
-          label: "Active Tunnels",
-          icon: <Network size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/$orgSlug/requests",
-          label: "Requests",
-          icon: <History size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/$orgSlug/subdomains",
-          label: "Subdomains",
-          icon: <Globe size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/$orgSlug/domains",
-          label: "Domains",
-          icon: <Link2 size={NAV_ICON_SIZE} />,
-        },
-      ],
+      to: "/$orgSlug",
+      label: "Overview",
+      icon: <LayoutDashboard size={NAV_ICON_SIZE} />,
+      activeOptions: { exact: true },
     },
     {
-      title: "Organization",
-      items: [
-        canManageBilling && {
-          to: "/$orgSlug/billing",
-          label: "Billing",
-          icon: <CreditCard size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/$orgSlug/members",
-          label: "Members",
-          icon: <Users size={NAV_ICON_SIZE} />,
-        },
-      ].filter((item) => item !== false && item !== undefined) as any[],
+      to: "/$orgSlug/tunnels",
+      label: "Active Tunnels",
+      icon: <Network size={NAV_ICON_SIZE} />,
     },
     {
-      title: "Configuration",
-      items: [
-        {
-          to: "/$orgSlug/settings",
-          label: "Settings",
-          icon: <Settings size={NAV_ICON_SIZE} />,
-        },
-        {
-          to: "/$orgSlug/tokens",
-          label: "API Tokens",
-          icon: <Key size={NAV_ICON_SIZE} />,
-        },
-      ],
+      to: "/$orgSlug/requests",
+      label: "Requests",
+      icon: <History size={NAV_ICON_SIZE} />,
     },
-  ];
+    {
+      to: "/$orgSlug/subdomains",
+      label: "Subdomains",
+      icon: <Globe size={NAV_ICON_SIZE} />,
+    },
+    {
+      to: "/$orgSlug/domains",
+      label: "Domains",
+      icon: <Link2 size={NAV_ICON_SIZE} />,
+    },
+    canManageBilling && {
+      to: "/$orgSlug/billing",
+      label: "Billing",
+      icon: <CreditCard size={NAV_ICON_SIZE} />,
+    },
+    {
+      to: "/$orgSlug/members",
+      label: "Members",
+      icon: <Users size={NAV_ICON_SIZE} />,
+    },
+    {
+      to: "/$orgSlug/tokens",
+      label: "API Tokens",
+      icon: <Key size={NAV_ICON_SIZE} />,
+    },
+    {
+      to: "/$orgSlug/settings",
+      label: "Settings",
+      icon: <Settings size={NAV_ICON_SIZE} />,
+    },
+  ].filter((item) => item !== false && item !== undefined) as any[];
 
   return (
     <div
@@ -187,25 +172,16 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       />
 
       <div className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
-        {navSections.map((section, idx) => (
-          <div key={section.title} className={idx > 0 ? "mt-4" : ""}>
-            {!isCollapsed && (
-              <div className="px-4 mt-2 mb-2 text-[10px] font-bold text-gray-600 uppercase tracking-wider">
-                {section.title}
-              </div>
-            )}
-            {section.items.map((item) => (
-              <NavItem
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={item.label}
-                activeOptions={item.activeOptions}
-                isCollapsed={isCollapsed}
-                params={{ orgSlug }}
-              />
-            ))}
-          </div>
+        {navItems.map((item) => (
+          <NavItem
+            key={item.to}
+            to={item.to}
+            icon={item.icon}
+            label={item.label}
+            activeOptions={item.activeOptions}
+            isCollapsed={isCollapsed}
+            params={{ orgSlug }}
+          />
         ))}
       </div>
 
