@@ -37,6 +37,7 @@ function RequestsView() {
   const [requests, setRequests] = useState<TunnelEvent[]>([]);
   const [timeRange, setTimeRange] = useState<TimeRange>("live");
   const [isLoading, setIsLoading] = useState(false);
+  const { orgSlug } = Route.useParams();
   const { selectedOrganization } = useAppStore();
   const activeOrgId = selectedOrganization?.id;
   const wsRef = useRef<WebSocket | null>(null);
@@ -44,12 +45,12 @@ function RequestsView() {
   const activeIndex = TIME_RANGES.findIndex((r) => r.value === timeRange);
 
   const fetchHistoricalRequests = async (range: TimeRange) => {
-    if (!activeOrgId || range === "live") return;
+    if (!orgSlug || range === "live") return;
 
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/requests?organizationId=${activeOrgId}&range=${range}&limit=100&search=${encodeURIComponent(searchTerm)}`,
+        `/api/${orgSlug}/requests?range=${range}&limit=100&search=${encodeURIComponent(searchTerm)}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -73,7 +74,7 @@ function RequestsView() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [timeRange, activeOrgId, searchTerm]);
+  }, [timeRange, activeOrgId, searchTerm, orgSlug]);
 
   // WebSocket connection for live mode
   useEffect(() => {

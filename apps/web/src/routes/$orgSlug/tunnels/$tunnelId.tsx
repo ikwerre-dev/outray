@@ -34,15 +34,17 @@ function TunnelDetailView() {
   const [timeRange, setTimeRange] = useState("24h");
 
   const { data: tunnelData, isLoading: tunnelLoading } = useQuery({
-    queryKey: ["tunnel", tunnelId],
-    queryFn: () => appClient.tunnels.get(tunnelId),
+    queryKey: ["tunnel", orgSlug, tunnelId],
+    queryFn: () => appClient.tunnels.get(orgSlug, tunnelId),
   });
 
   const stopMutation = useMutation({
-    mutationFn: () => appClient.tunnels.stop(tunnelId),
+    mutationFn: () => appClient.tunnels.stop(orgSlug, tunnelId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tunnels"] });
-      void queryClient.invalidateQueries({ queryKey: ["tunnel", tunnelId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["tunnel", orgSlug, tunnelId],
+      });
     },
   });
 
@@ -57,9 +59,9 @@ function TunnelDetailView() {
     isLoading: statsLoading,
     isPlaceholderData,
   } = useQuery({
-    queryKey: ["tunnelStats", tunnelId, timeRange],
+    queryKey: ["tunnelStats", orgSlug, tunnelId, timeRange],
     queryFn: async () => {
-      const result = await appClient.stats.tunnel(tunnelId, timeRange);
+      const result = await appClient.stats.tunnel(orgSlug, tunnelId, timeRange);
       if ("error" in result) throw new Error(result.error);
       return result;
     },
@@ -71,10 +73,10 @@ function TunnelDetailView() {
   // Protocol stats query (TCP/UDP)
   const { data: protocolStatsData, isLoading: protocolStatsLoading } = useQuery(
     {
-      queryKey: ["protocolStats", tunnelId, timeRange],
+      queryKey: ["protocolStats", orgSlug, tunnelId, timeRange],
       queryFn: async () => {
         const response = await fetch(
-          `/api/stats/protocol?tunnelId=${tunnelId}&range=${timeRange}`,
+          `/api/${orgSlug}/stats/protocol?tunnelId=${tunnelId}&range=${timeRange}`,
         );
         if (!response.ok) throw new Error("Failed to fetch protocol stats");
         return response.json();

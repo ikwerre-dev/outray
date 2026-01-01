@@ -14,7 +14,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { appClient } from "@/lib/app-client";
-import { useAppStore } from "@/lib/store";
 import { getPlanLimits } from "@/lib/subscription-plans";
 import axios from "axios";
 import { NewTunnelModal } from "@/components/new-tunnel-modal";
@@ -33,26 +32,23 @@ function TunnelsView() {
   const [isNewTunnelModalOpen, setIsNewTunnelModalOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
 
-  const { selectedOrganization } = useAppStore();
-  const activeOrgId = selectedOrganization?.id;
-
   const { data: subscriptionData } = useQuery({
-    queryKey: ["subscription", activeOrgId],
+    queryKey: ["subscription", orgSlug],
     queryFn: async () => {
-      if (!activeOrgId) return null;
-      const response = await axios.get(`/api/subscriptions/${activeOrgId}`);
+      if (!orgSlug) return null;
+      const response = await axios.get(`/api/${orgSlug}/subscriptions`);
       return response.data;
     },
-    enabled: !!activeOrgId,
+    enabled: !!orgSlug,
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["tunnels", activeOrgId],
+    queryKey: ["tunnels", orgSlug],
     queryFn: () => {
-      if (!activeOrgId) throw new Error("No active organization");
-      return appClient.tunnels.list(activeOrgId);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.tunnels.list(orgSlug);
     },
-    enabled: !!activeOrgId,
+    enabled: !!orgSlug,
   });
 
   if (isLoading) {

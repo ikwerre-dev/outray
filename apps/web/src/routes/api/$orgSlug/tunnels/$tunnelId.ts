@@ -1,21 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
-import { auth } from "../../../lib/auth";
-import { db } from "../../../db";
-import { tunnels } from "../../../db/app-schema";
-import { redis } from "../../../lib/redis";
+import { db } from "../../../../db";
+import { tunnels } from "../../../../db/app-schema";
+import { requireOrgFromSlug } from "../../../../lib/org";
+import { redis } from "../../../../lib/redis";
 
-export const Route = createFileRoute("/api/tunnels/$tunnelId")({
+export const Route = createFileRoute("/api/$orgSlug/tunnels/$tunnelId")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const { orgSlug, tunnelId } = params;
 
-        const { tunnelId } = params;
+        const orgContext = await requireOrgFromSlug(request, orgSlug);
+        if ("error" in orgContext) {
+          return orgContext.error;
+        }
 
         const [tunnel] = await db
           .select()
@@ -26,36 +26,22 @@ export const Route = createFileRoute("/api/tunnels/$tunnelId")({
           return json({ error: "Tunnel not found" }, { status: 404 });
         }
 
-        if (tunnel.organizationId) {
-          const organizations = await auth.api.listOrganizations({
-            headers: request.headers,
-          });
-          const hasAccess = organizations.find(
-            (org) => org.id === tunnel.organizationId,
-          );
-          if (!hasAccess) {
-            return json({ error: "Unauthorized" }, { status: 403 });
-          }
-        } else if (tunnel.userId !== session.user.id) {
+        if (tunnel.organizationId !== orgContext.organization.id) {
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        // Determine the Redis key for online status based on protocol
         let onlineTunnelId = "";
         const protocol = tunnel.protocol || "http";
 
         if (protocol === "tcp" || protocol === "udp") {
-          // For TCP/UDP, the tunnel name is stored directly (e.g., "rational-chipmunk")
-          // Extract from URL like "tcp://rational-chipmunk.localhost.direct:20001"
           try {
             const urlObj = new URL(tunnel.url);
             const hostParts = urlObj.hostname.split(".");
-            onlineTunnelId = hostParts[0]; // Just the adjective-noun part
+            onlineTunnelId = hostParts[0];
           } catch (e) {
             console.error("Failed to parse tunnel URL:", tunnel.url);
           }
         } else {
-          // For HTTP, use full hostname
           try {
             const urlObj = new URL(
               tunnel.url.startsWith("http")

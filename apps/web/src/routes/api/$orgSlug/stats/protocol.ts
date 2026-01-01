@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
-import { auth } from "../../../lib/auth";
-import { db } from "../../../db";
-import { tunnels } from "../../../db/app-schema";
 import { createClient } from "@clickhouse/client";
+import { db } from "../../../../db";
+import { tunnels } from "../../../../db/app-schema";
+import { requireOrgFromSlug } from "../../../../lib/org";
 
 const clickhouse = createClient({
   url: process.env.CLICKHOUSE_URL || "http://localhost:8123",
@@ -13,18 +13,19 @@ const clickhouse = createClient({
   database: process.env.CLICKHOUSE_DATABASE || "default",
 });
 
-export const Route = createFileRoute("/api/stats/protocol")({
+export const Route = createFileRoute("/api/$orgSlug/stats/protocol")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
-
+      GET: async ({ request, params }) => {
+        const { orgSlug } = params;
         const url = new URL(request.url);
         const tunnelId = url.searchParams.get("tunnelId");
         const timeRange = url.searchParams.get("range") || "24h";
+
+        const orgContext = await requireOrgFromSlug(request, orgSlug);
+        if ("error" in orgContext) {
+          return orgContext.error;
+        }
 
         if (!tunnelId) {
           return json({ error: "Tunnel ID required" }, { status: 400 });
@@ -39,17 +40,7 @@ export const Route = createFileRoute("/api/stats/protocol")({
           return json({ error: "Tunnel not found" }, { status: 404 });
         }
 
-        if (tunnel.organizationId) {
-          const organizations = await auth.api.listOrganizations({
-            headers: request.headers,
-          });
-          const hasAccess = organizations.find(
-            (org) => org.id === tunnel.organizationId,
-          );
-          if (!hasAccess) {
-            return json({ error: "Unauthorized" }, { status: 403 });
-          }
-        } else if (tunnel.userId !== session.user.id) {
+        if (tunnel.organizationId !== orgContext.organization.id) {
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 
@@ -63,7 +54,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
         }
 
         try {
-          // Get total connections (TCP) or unique clients (UDP)
           const connectionsResult = await clickhouse.query({
             query: `
               SELECT 
@@ -83,7 +73,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
             unique_clients: string;
           }>;
 
-          // Get total bytes transferred
           const bandwidthResult = await clickhouse.query({
             query: `
               SELECT 
@@ -100,7 +89,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
             total_bytes_out: string;
           }>;
 
-          // Get total packets/data events
           const packetsResult = await clickhouse.query({
             query: `
               SELECT 
@@ -118,7 +106,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
             total_closes: string;
           }>;
 
-          // Get average connection duration (TCP only)
           const durationResult = await clickhouse.query({
             query: `
               SELECT avg(duration_ms) as avg_duration_ms
@@ -135,7 +122,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
             avg_duration_ms: string;
           }>;
 
-          // Get chart data over time
           let chartQuery = "";
           if (timeRange === "1h") {
             chartQuery = `
@@ -224,7 +210,6 @@ export const Route = createFileRoute("/api/stats/protocol")({
             bytes_out: string;
           }>;
 
-          // Get recent connections/events
           const recentResult = await clickhouse.query({
             query: `
               SELECT 

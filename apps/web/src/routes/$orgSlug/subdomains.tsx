@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Globe, Plus } from "lucide-react";
 import { appClient } from "@/lib/app-client";
-import { useAppStore } from "@/lib/store";
 import { getPlanLimits } from "@/lib/subscription-plans";
 import axios from "axios";
 import { SubdomainHeader } from "@/components/subdomains/subdomain-header";
@@ -17,8 +16,7 @@ export const Route = createFileRoute("/$orgSlug/subdomains")({
 });
 
 function SubdomainsView() {
-  const { selectedOrganization } = useAppStore();
-  const activeOrgId = selectedOrganization?.id;
+  const { orgSlug } = Route.useParams();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
@@ -26,33 +24,33 @@ function SubdomainsView() {
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery(
     {
-      queryKey: ["subscription", activeOrgId],
+      queryKey: ["subscription", orgSlug],
       queryFn: async () => {
-        if (!activeOrgId) return null;
-        const response = await axios.get(`/api/subscriptions/${activeOrgId}`);
+        if (!orgSlug) return null;
+        const response = await axios.get(`/api/${orgSlug}/subscriptions`);
         return response.data;
       },
-      enabled: !!activeOrgId,
+      enabled: !!orgSlug,
     },
   );
 
   const { data, isLoading: isLoadingSubdomains } = useQuery({
-    queryKey: ["subdomains", activeOrgId],
+    queryKey: ["subdomains", orgSlug],
     queryFn: () => {
-      if (!activeOrgId) throw new Error("No active organization");
-      return appClient.subdomains.list(activeOrgId);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.subdomains.list(orgSlug);
     },
-    enabled: !!activeOrgId,
+    enabled: !!orgSlug,
   });
 
   const isLoading = isLoadingSubdomains || isLoadingSubscription;
 
   const createMutation = useMutation({
     mutationFn: async (subdomain: string) => {
-      if (!activeOrgId) throw new Error("No active organization");
+      if (!orgSlug) throw new Error("No active organization");
       return appClient.subdomains.create({
         subdomain,
-        organizationId: activeOrgId,
+        orgSlug,
       });
     },
     onSuccess: (data) => {
@@ -60,7 +58,7 @@ function SubdomainsView() {
         setError(data.error);
       } else {
         setIsCreating(false);
-        queryClient.invalidateQueries({ queryKey: ["subdomains"] });
+        queryClient.invalidateQueries({ queryKey: ["subdomains", orgSlug] });
       }
     },
     onError: () => {
@@ -70,10 +68,11 @@ function SubdomainsView() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return appClient.subdomains.delete(id);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.subdomains.delete(orgSlug, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subdomains"] });
+      queryClient.invalidateQueries({ queryKey: ["subdomains", orgSlug] });
     },
   });
 

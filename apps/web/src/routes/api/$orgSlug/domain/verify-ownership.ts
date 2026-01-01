@@ -1,36 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
-import { eq, and } from "drizzle-orm";
-import { db } from "../../../db";
-import { domains } from "../../../db/app-schema";
+import { and, eq } from "drizzle-orm";
 
-export const Route = createFileRoute("/api/domain/verify-ownership")({
+import { db } from "../../../../db";
+import { domains } from "../../../../db/app-schema";
+import { requireOrgFromSlug } from "../../../../lib/org";
+
+export const Route = createFileRoute("/api/$orgSlug/domain/verify-ownership")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request, params }) => {
         try {
+          const orgResult = await requireOrgFromSlug(request, params.orgSlug);
+          if ("error" in orgResult) return orgResult.error;
+          const { organization } = orgResult;
+
           const body = (await request.json()) as {
             domain?: string;
-            organizationId?: string;
           };
 
-          const { domain, organizationId } = body;
+          const { domain } = body;
 
-          if (!domain || !organizationId) {
+          if (!domain) {
             return json(
               { valid: false, error: "Missing required fields" },
               { status: 400 },
             );
           }
 
-          // Check if domain exists and belongs to the organization
           const [existingDomain] = await db
             .select()
             .from(domains)
             .where(
               and(
                 eq(domains.domain, domain),
-                eq(domains.organizationId, organizationId),
+                eq(domains.organizationId, organization.id),
               ),
             );
 
@@ -41,7 +45,6 @@ export const Route = createFileRoute("/api/domain/verify-ownership")({
             });
           }
 
-          // Check if domain is active (DNS verified)
           if (existingDomain.status !== "active") {
             return json({
               valid: false,

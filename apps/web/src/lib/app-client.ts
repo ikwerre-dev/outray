@@ -49,16 +49,17 @@ export interface Domain {
 
 interface CreateAuthTokenParams {
   name: string;
-  organizationId: string;
+  orgSlug: string;
 }
 
 interface DeleteAuthTokenParams {
   id: string;
+  orgSlug: string;
 }
 
 interface CreateDomainParams {
   domain: string;
-  organizationId: string;
+  orgSlug: string;
 }
 
 type SuccessResponse<T> = T;
@@ -94,73 +95,78 @@ async function apiCall<T = any>(
 
 export const appClient = {
   tunnels: {
-    list: async (organizationId: string) =>
-      apiCall<{ tunnels: Tunnel[] }>("get", "/api/tunnels", {
-        params: { organizationId },
-      }),
+    list: async (orgSlug: string) =>
+      apiCall<{ tunnels: Tunnel[] }>("get", `/api/${orgSlug}/tunnels`),
 
-    get: async (tunnelId: string) =>
-      apiCall<{ tunnel: Tunnel }>("get", `/api/tunnels/${tunnelId}`),
+    get: async (orgSlug: string, tunnelId: string) =>
+      apiCall<{ tunnel: Tunnel }>("get", `/api/${orgSlug}/tunnels/${tunnelId}`),
 
-    stop: async (tunnelId: string) =>
-      apiCall<{ message: string }>("post", `/api/tunnels/${tunnelId}/stop`),
+    stop: async (orgSlug: string, tunnelId: string) =>
+      apiCall<{ message: string }>(
+        "post",
+        `/api/${orgSlug}/tunnels/${tunnelId}/stop`,
+      ),
   },
 
   authTokens: {
-    list: async (organizationId: string) =>
-      apiCall<{ tokens: AuthToken[] }>("get", "/api/auth-tokens", {
-        params: { organizationId },
+    list: async (orgSlug: string) =>
+      apiCall<{ tokens: AuthToken[] }>("get", `/api/${orgSlug}/auth-tokens`),
+
+    create: async ({ name, orgSlug }: CreateAuthTokenParams) =>
+      apiCall<{ token: AuthToken }>("post", `/api/${orgSlug}/auth-tokens`, {
+        data: { name },
       }),
 
-    create: async (params: CreateAuthTokenParams) =>
-      apiCall<{ token: AuthToken }>("post", "/api/auth-tokens", {
-        data: params,
-      }),
-
-    delete: async (params: DeleteAuthTokenParams) =>
-      apiCall<{ success: boolean }>("delete", "/api/auth-tokens", {
-        data: params,
+    delete: async ({ id, orgSlug }: DeleteAuthTokenParams) =>
+      apiCall<{ success: boolean }>("delete", `/api/${orgSlug}/auth-tokens`, {
+        data: { id },
       }),
   },
 
   subdomains: {
-    list: async (organizationId: string) =>
-      apiCall<{ subdomains: Subdomain[] }>("get", "/api/subdomains", {
-        params: { organizationId },
-      }),
+    list: async (orgSlug: string) =>
+      apiCall<{ subdomains: Subdomain[] }>("get", `/api/${orgSlug}/subdomains`),
 
-    create: async (params: { subdomain: string; organizationId: string }) =>
-      apiCall<{ subdomain: Subdomain }>("post", "/api/subdomains", {
-        data: params,
-      }),
+    create: async (params: { subdomain: string; orgSlug: string }) =>
+      apiCall<{ subdomain: Subdomain }>(
+        "post",
+        `/api/${params.orgSlug}/subdomains`,
+        {
+          data: { subdomain: params.subdomain },
+        },
+      ),
 
-    delete: async (id: string) =>
-      apiCall<{ success: boolean }>("delete", `/api/subdomains/${id}`),
+    delete: async (orgSlug: string, id: string) =>
+      apiCall<{ success: boolean }>(
+        "delete",
+        `/api/${orgSlug}/subdomains/${id}`,
+      ),
   },
 
   domains: {
-    list: async (organizationId: string) =>
-      apiCall<{ domains: Domain[] }>("get", "/api/domains", {
-        params: { organizationId },
-      }),
+    list: async (orgSlug: string) =>
+      apiCall<{ domains: Domain[] }>("get", `/api/${orgSlug}/domains`),
 
     create: async (params: CreateDomainParams) =>
-      apiCall<{ domain: Domain }>("post", "/api/domains", {
-        data: params,
+      apiCall<{ domain: Domain }>("post", `/api/${params.orgSlug}/domains`, {
+        data: { domain: params.domain },
       }),
 
-    delete: async (domainId: string) =>
-      apiCall<{ message: string }>("delete", `/api/domains/${domainId}`),
+    delete: async (orgSlug: string, domainId: string) =>
+      apiCall<{ message: string }>(
+        "delete",
+        `/api/${orgSlug}/domains/${domainId}`,
+      ),
 
-    verify: async (domainId: string) =>
+    verify: async (orgSlug: string, domainId: string) =>
       apiCall<{ verified: boolean; message?: string }>(
         "post",
-        `/api/domains/${domainId}/verify`,
+        `/api/${orgSlug}/domains/${domainId}/verify`,
       ),
   },
 
   stats: {
-    overview: async (organizationId: string, range: string = "24h") =>
+    overview: async (orgSlug: string, range: string = "24h") =>
       apiCall<{
         totalRequests: number;
         requestsChange: number;
@@ -169,11 +175,11 @@ export const appClient = {
         totalDataTransfer: number;
         dataTransferChange: number;
         chartData: Array<{ hour: string; requests: number }>;
-      }>("get", "/api/stats/overview", {
-        params: { organizationId, range },
+      }>("get", `/api/${orgSlug}/stats/overview`, {
+        params: { range },
       }),
 
-    tunnel: async (tunnelId: string, range: string = "24h") =>
+    tunnel: async (orgSlug: string, tunnelId: string, range: string = "24h") =>
       apiCall<{
         stats: {
           totalRequests: number;
@@ -191,17 +197,15 @@ export const appClient = {
           time: string;
           size: number;
         }>;
-      }>("get", "/api/stats/tunnel", {
+      }>("get", `/api/${orgSlug}/stats/tunnel`, {
         params: { tunnelId, range },
       }),
 
-    bandwidth: async (organizationId: string) =>
+    bandwidth: async (orgSlug: string) =>
       apiCall<{
         usage: number;
         limit: number;
         percentage: number;
-      }>("get", "/api/stats/bandwidth", {
-        params: { organizationId },
-      }),
+      }>("get", `/api/${orgSlug}/stats/bandwidth`),
   },
 };

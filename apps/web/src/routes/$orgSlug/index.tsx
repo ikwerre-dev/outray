@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { appClient } from "@/lib/app-client";
-import { useAppStore } from "@/lib/store";
 import { getPlanLimits } from "@/lib/subscription-plans";
 import axios from "axios";
 import {
@@ -58,19 +57,16 @@ function OverviewView() {
   const [isNewTunnelModalOpen, setIsNewTunnelModalOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [timeRange, setTimeRange] = useState("24h");
-  const { selectedOrganization } = useAppStore();
-  const activeOrganization = selectedOrganization?.id;
+  const { orgSlug } = Route.useParams();
 
   const { data: subscriptionData } = useQuery({
-    queryKey: ["subscription", activeOrganization],
+    queryKey: ["subscription", orgSlug],
     queryFn: async () => {
-      if (!activeOrganization) return null;
-      const response = await axios.get(
-        `/api/subscriptions/${activeOrganization}`,
-      );
+      if (!orgSlug) return null;
+      const response = await axios.get(`/api/${orgSlug}/subscriptions`);
       return response.data;
     },
-    enabled: !!activeOrganization,
+    enabled: !!orgSlug,
   });
 
   const {
@@ -78,30 +74,27 @@ function OverviewView() {
     isLoading: statsLoading,
     isPlaceholderData,
   } = useQuery({
-    queryKey: ["stats", "overview", activeOrganization, timeRange],
+    queryKey: ["stats", "overview", orgSlug, timeRange],
     queryFn: async () => {
-      if (!activeOrganization) return null;
-      const result = await appClient.stats.overview(
-        activeOrganization,
-        timeRange,
-      );
+      if (!orgSlug) return null;
+      const result = await appClient.stats.overview(orgSlug, timeRange);
       if ("error" in result) {
         throw new Error(result.error);
       }
       return result;
     },
-    enabled: !!activeOrganization,
+    enabled: !!orgSlug,
     placeholderData: keepPreviousData,
   });
 
   const { data: tunnelsData } = useQuery({
-    queryKey: ["tunnels", activeOrganization],
+    queryKey: ["tunnels", orgSlug],
     queryFn: () => {
-      if (!activeOrganization) throw new Error("No active organization");
+      if (!orgSlug) throw new Error("No active organization");
 
-      return appClient.tunnels.list(activeOrganization);
+      return appClient.tunnels.list(orgSlug);
     },
-    enabled: !!activeOrganization,
+    enabled: !!orgSlug,
   });
 
   const activeTunnels =

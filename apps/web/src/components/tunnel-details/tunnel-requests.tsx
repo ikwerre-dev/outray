@@ -1,6 +1,7 @@
 import { Search, MoreVertical, Radio } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/lib/store";
+import { useParams } from "@tanstack/react-router";
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1_073_741_824) {
@@ -47,6 +48,7 @@ export function TunnelRequests({ tunnelId }: TunnelRequestsProps) {
   const [requests, setRequests] = useState<TunnelEvent[]>([]);
   const [timeRange, setTimeRange] = useState<TimeRange>("live");
   const [isLoading, setIsLoading] = useState(false);
+  const { orgSlug } = useParams({ from: "/$orgSlug/tunnels/$tunnelId" });
   const { selectedOrganization } = useAppStore();
   const activeOrgId = selectedOrganization?.id;
   const wsRef = useRef<WebSocket | null>(null);
@@ -54,12 +56,12 @@ export function TunnelRequests({ tunnelId }: TunnelRequestsProps) {
   const activeIndex = TIME_RANGES.findIndex((r) => r.value === timeRange);
 
   const fetchHistoricalRequests = async (range: TimeRange) => {
-    if (!activeOrgId || range === "live") return;
+    if (!orgSlug || range === "live") return;
 
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/requests?organizationId=${activeOrgId}&tunnelId=${tunnelId}&range=${range}&limit=100&search=${encodeURIComponent(searchTerm)}`,
+        `/api/${orgSlug}/requests?tunnelId=${tunnelId}&range=${range}&limit=100&search=${encodeURIComponent(searchTerm)}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -81,7 +83,7 @@ export function TunnelRequests({ tunnelId }: TunnelRequestsProps) {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [timeRange, activeOrgId, tunnelId, searchTerm]);
+  }, [timeRange, activeOrgId, tunnelId, searchTerm, orgSlug]);
 
   useEffect(() => {
     if (!activeOrgId || timeRange !== "live") {

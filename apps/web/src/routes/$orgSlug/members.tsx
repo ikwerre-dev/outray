@@ -25,6 +25,7 @@ export const Route = createFileRoute("/$orgSlug/members")({
 });
 
 function MembersView() {
+  const { orgSlug } = Route.useParams();
   const { selectedOrganization } = useAppStore();
   const selectedOrganizationId = selectedOrganization?.id;
   const queryClient = useQueryClient();
@@ -107,12 +108,10 @@ function MembersView() {
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery(
     {
-      queryKey: ["subscription", selectedOrganizationId],
+      queryKey: ["subscription", orgSlug],
       queryFn: async () => {
-        if (!selectedOrganizationId) return null;
-        const response = await axios.get(
-          `/api/subscriptions/${selectedOrganizationId}`,
-        );
+        if (!orgSlug) return null;
+        const response = await axios.get(`/api/${orgSlug}/subscriptions`);
         return response.data;
       },
       enabled: !!selectedOrganizationId,

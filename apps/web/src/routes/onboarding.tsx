@@ -148,14 +148,13 @@ function Onboarding() {
       }
 
       if (data) {
-        await fetch("/api/auth-tokens", {
+        await fetch(`/api/${data.slug}/auth-tokens`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             name: "Default Token",
-            organizationId: data.id,
           }),
         });
 

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
-import { auth } from "../../../lib/auth";
-import { redis } from "../../../lib/redis";
 import { createClient } from "@clickhouse/client";
+
+import { redis } from "../../../../lib/redis";
+import { requireOrgFromSlug } from "../../../../lib/org";
 
 const clickhouse = createClient({
   url: process.env.CLICKHOUSE_URL || "http://localhost:8123",
@@ -11,34 +12,17 @@ const clickhouse = createClient({
   database: process.env.CLICKHOUSE_DATABASE || "default",
 });
 
-export const Route = createFileRoute("/api/stats/overview")({
+export const Route = createFileRoute("/api/$orgSlug/stats/overview")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
+      GET: async ({ request, params }) => {
+        const orgResult = await requireOrgFromSlug(request, params.orgSlug);
+        if ("error" in orgResult) return orgResult.error;
+        const { organization } = orgResult;
 
         const url = new URL(request.url);
-        const organizationId = url.searchParams.get("organizationId");
         const timeRange = url.searchParams.get("range") || "24h";
-
-        if (!organizationId) {
-          return json({ error: "Organization ID required" }, { status: 400 });
-        }
-
-        const organizations = await auth.api.listOrganizations({
-          headers: request.headers,
-        });
-
-        const hasAccess = organizations.find(
-          (org) => org.id === organizationId,
-        );
-
-        if (!hasAccess) {
-          return json({ error: "Unauthorized" }, { status: 403 });
-        }
+        const organizationId = organization.id;
 
         try {
           let interval = "24 HOUR";
@@ -161,12 +145,10 @@ export const Route = createFileRoute("/api/stats/overview")({
                 ? 100
                 : 0;
 
-          // Get active tunnels count from Redis SET
           const activeTunnelsCount = await redis.scard(
             `org:${organizationId}:online_tunnels`,
           );
 
-          // Get chart data based on time range (combining HTTP and protocol events)
           let chartQuery = "";
           if (timeRange === "1h") {
             chartQuery = `
@@ -225,7 +207,6 @@ export const Route = createFileRoute("/api/stats/overview")({
               ORDER BY t.time ASC
             `;
           } else {
-            // For 7d and 30d, group by day
             const days = timeRange === "7d" ? 7 : 30;
             chartQuery = `
               WITH times AS (
@@ -268,19 +249,19 @@ export const Route = createFileRoute("/api/stats/overview")({
 
           return json({
             totalRequests,
-            requestsChange: Math.round(requestsChange),
+            requestsChange,
             activeTunnels: activeTunnelsCount,
             activeTunnelsChange: 0,
             totalDataTransfer: totalBytes,
-            dataTransferChange: Math.round(dataTransferChange),
+            dataTransferChange,
             chartData: chartData.map((d) => ({
-              hour: d.time,
-              requests: parseInt(d.requests),
+              time: d.time,
+              requests: parseInt(d.requests || "0"),
             })),
           });
         } catch (error) {
-          console.error("Error fetching stats:", error);
-          return json({ error: "Failed to fetch statistics" }, { status: 500 });
+          console.error("Failed to fetch stats overview:", error);
+          return json({ error: "Failed to fetch stats" }, { status: 500 });
         }
       },
     },

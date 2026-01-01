@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
-import { auth } from "../../../lib/auth";
-import { db } from "../../../db";
-import { subdomains } from "../../../db/app-schema";
+import { db } from "../../../../db";
+import { subdomains } from "../../../../db/app-schema";
+import { requireOrgFromSlug } from "../../../../lib/org";
 
-export const Route = createFileRoute("/api/subdomains/$subdomainId")({
+export const Route = createFileRoute("/api/$orgSlug/subdomains/$subdomainId")({
   server: {
     handlers: {
       DELETE: async ({ request, params }) => {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const { orgSlug, subdomainId } = params;
 
-        const { subdomainId } = params;
+        const orgContext = await requireOrgFromSlug(request, orgSlug);
+        if ("error" in orgContext) {
+          return orgContext.error;
+        }
 
         const [subdomain] = await db
           .select()
@@ -25,15 +25,7 @@ export const Route = createFileRoute("/api/subdomains/$subdomainId")({
           return json({ error: "Subdomain not found" }, { status: 404 });
         }
 
-        const organizations = await auth.api.listOrganizations({
-          headers: request.headers,
-        });
-
-        const hasAccess = organizations.find(
-          (org) => org.id === subdomain.organizationId,
-        );
-
-        if (!hasAccess) {
+        if (subdomain.organizationId !== orgContext.organization.id) {
           return json({ error: "Unauthorized" }, { status: 403 });
         }
 

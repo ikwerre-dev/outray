@@ -18,8 +18,8 @@ export const Route = createFileRoute("/$orgSlug/domains")({
 });
 
 function DomainsView() {
+  const { orgSlug } = Route.useParams();
   const { selectedOrganization } = useAppStore();
-  const activeOrgId = selectedOrganization?.id;
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
@@ -38,33 +38,33 @@ function DomainsView() {
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery(
     {
-      queryKey: ["subscription", activeOrgId],
+      queryKey: ["subscription", orgSlug],
       queryFn: async () => {
-        if (!activeOrgId) return null;
-        const response = await axios.get(`/api/subscriptions/${activeOrgId}`);
+        if (!orgSlug) return null;
+        const response = await axios.get(`/api/${orgSlug}/subscriptions`);
         return response.data;
       },
-      enabled: !!activeOrgId,
+      enabled: !!orgSlug,
     },
   );
 
   const { data, isLoading: isLoadingDomains } = useQuery({
-    queryKey: ["domains", activeOrgId],
+    queryKey: ["domains", orgSlug],
     queryFn: () => {
-      if (!activeOrgId) throw new Error("No active organization");
-      return appClient.domains.list(activeOrgId);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.domains.list(orgSlug);
     },
-    enabled: !!activeOrgId,
+    enabled: !!orgSlug,
   });
 
   const isLoading = isLoadingDomains || isLoadingSubscription;
 
   const createMutation = useMutation({
     mutationFn: async (domain: string) => {
-      if (!activeOrgId) throw new Error("No active organization");
+      if (!orgSlug) throw new Error("No active organization");
       return appClient.domains.create({
         domain,
-        organizationId: activeOrgId,
+        orgSlug,
       });
     },
     onSuccess: (data) => {
@@ -82,16 +82,18 @@ function DomainsView() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return appClient.domains.delete(id);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.domains.delete(orgSlug, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domains", orgSlug] });
     },
   });
 
   const verifyMutation = useMutation({
     mutationFn: async (id: string) => {
-      return appClient.domains.verify(id);
+      if (!orgSlug) throw new Error("No active organization");
+      return appClient.domains.verify(orgSlug, id);
     },
     onSuccess: (data) => {
       if ("error" in data) {
@@ -102,7 +104,7 @@ function DomainsView() {
           type: "error",
         });
       } else {
-        queryClient.invalidateQueries({ queryKey: ["domains"] });
+        queryClient.invalidateQueries({ queryKey: ["domains", orgSlug] });
       }
     },
   });
@@ -113,7 +115,7 @@ function DomainsView() {
   const planLimits = getPlanLimits(currentPlan as any);
 
   const currentDomainCount = domains.length;
-  const domainLimit = planLimits.maxDomains;
+  const domainLimit = Number(planLimits.maxDomains);
   const isAtLimit = domainLimit !== -1 && currentDomainCount >= domainLimit;
   const isUnlimited = domainLimit === -1;
 

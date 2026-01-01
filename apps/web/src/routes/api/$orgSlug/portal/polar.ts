@@ -1,16 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CustomerPortal } from "@polar-sh/tanstack-start";
-import { auth } from "../../../lib/auth";
-import { db } from "../../../db";
-import { subscriptions } from "../../../db/subscription-schema";
 import { eq } from "drizzle-orm";
 
-export const Route = createFileRoute("/api/portal/polar")({
+import { db } from "../../../../db";
+import { subscriptions } from "../../../../db/subscription-schema";
+import { auth } from "../../../../lib/auth";
+
+function extractOrgSlug(request: Request): string | undefined {
+  const segments = new URL(request.url).pathname.split("/").filter(Boolean);
+  return segments[1]; // /api/:orgSlug/portal/polar => ["api", orgSlug, ...]
+}
+
+export const Route = createFileRoute("/api/$orgSlug/portal/polar")({
   server: {
     handlers: {
       GET: CustomerPortal({
         accessToken: process.env.POLAR_ACCESS_TOKEN!,
         getCustomerId: async (request: Request) => {
+          const orgSlug = extractOrgSlug(request);
+          if (!orgSlug) {
+            throw new Error("Organization slug missing");
+          }
+
           const session = await auth.api.getSession({
             headers: request.headers,
           });
@@ -18,17 +29,21 @@ export const Route = createFileRoute("/api/portal/polar")({
             throw new Error("Unauthorized");
           }
 
-          const url = new URL(request.url);
-          const organizationId = url.searchParams.get("organizationId");
+          const organizations = await auth.api.listOrganizations({
+            headers: request.headers,
+          });
+          const organization = organizations.find(
+            (org) => org.slug === orgSlug,
+          );
 
-          if (!organizationId) {
-            throw new Error("Organization ID required");
+          if (!organization) {
+            throw new Error("Unauthorized");
           }
 
           const [subscription] = await db
             .select()
             .from(subscriptions)
-            .where(eq(subscriptions.organizationId, organizationId))
+            .where(eq(subscriptions.organizationId, organization.id))
             .limit(1);
 
           if (!subscription?.polarCustomerId) {

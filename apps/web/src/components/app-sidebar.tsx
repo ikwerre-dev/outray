@@ -47,21 +47,17 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       }
     : null;
 
-  const selectedOrganizationId = selectedOrganization?.id;
-
   const { data: session } = authClient.useSession();
   const user = session?.user;
 
   const { data: subscriptionData } = useQuery({
-    queryKey: ["subscription", selectedOrganizationId],
+    queryKey: ["subscription", orgSlug],
     queryFn: async () => {
-      if (!selectedOrganizationId) return null;
-      const response = await axios.get(
-        `/api/subscriptions/${selectedOrganizationId}`,
-      );
+      if (!orgSlug) return null;
+      const response = await axios.get(`/api/${orgSlug}/subscriptions`);
       return response.data;
     },
-    enabled: !!selectedOrganizationId,
+    enabled: !!orgSlug,
   });
 
   const subscription = subscriptionData?.subscription;
@@ -71,15 +67,15 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (selectedOrganizationId) {
-        const response = await appClient.stats.overview(selectedOrganizationId);
+      if (orgSlug) {
+        const response = await appClient.stats.overview(orgSlug);
         if (response && "activeTunnels" in response) {
           setActiveTunnelsCount(response.activeTunnels || 0);
         }
       }
     };
     fetchStats();
-  }, [selectedOrganizationId]);
+  }, [orgSlug]);
 
   const { data: canManageBilling } = usePermission({
     billing: ["manage"],

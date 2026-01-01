@@ -26,6 +26,7 @@ export const Route = createFileRoute("/$orgSlug/billing")({
 });
 
 function BillingView() {
+  const { orgSlug } = Route.useParams();
   const { selectedOrganization } = useAppStore();
   const selectedOrganizationId = selectedOrganization?.id;
   const { success } = Route.useSearch();
@@ -55,14 +56,12 @@ function BillingView() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["subscription", selectedOrganizationId],
+    queryKey: ["subscription", orgSlug],
     queryFn: async () => {
-      const response = await axios.get(
-        `/api/subscriptions/${selectedOrganizationId}`,
-      );
+      const response = await axios.get(`/api/${orgSlug}/subscriptions`);
       return response.data;
     },
-    enabled: !!selectedOrganizationId && !!canManageBilling,
+    enabled: !!selectedOrganizationId && !!canManageBilling && !!orgSlug,
   });
 
   if (isCheckingPermission) {
@@ -138,7 +137,7 @@ function BillingView() {
   const handleManageSubscription = () => {
     if (!selectedOrganizationId) return;
 
-    window.location.href = `/api/portal/polar?organizationId=${selectedOrganizationId}`;
+    window.location.href = `/api/${orgSlug}/portal/polar`;
   };
 
   return (

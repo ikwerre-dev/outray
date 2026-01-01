@@ -22,32 +22,31 @@ interface AuthToken {
 }
 
 function TokensSettingsView() {
+  const { orgSlug } = Route.useParams();
   const { selectedOrganization } = useAppStore();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [tokenToDelete, setTokenToDelete] = useState<string | null>(null);
 
   const { data: tokens, isLoading } = useQuery({
-    queryKey: ["auth-tokens", selectedOrganization?.id],
+    queryKey: ["auth-tokens", orgSlug],
     queryFn: async () => {
-      if (!selectedOrganization?.id) return [];
-      const response = await axios.get(
-        `/api/auth-tokens?organizationId=${selectedOrganization.id}`,
-      );
+      if (!orgSlug) return [];
+      const response = await axios.get(`/api/${orgSlug}/auth-tokens`);
       return response.data.tokens as AuthToken[];
     },
-    enabled: !!selectedOrganization?.id,
+    enabled: !!orgSlug,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await axios.delete("/api/auth-tokens", {
-        data: { id, organizationId: selectedOrganization?.id },
+      await axios.delete(`/api/${orgSlug}/auth-tokens`, {
+        data: { id },
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["auth-tokens", selectedOrganization?.id],
+        queryKey: ["auth-tokens", orgSlug],
       });
       setTokenToDelete(null);
     },

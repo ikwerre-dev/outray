@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { useAppStore } from "@/lib/store";
+import { useParams } from "@tanstack/react-router";
 
 interface CreateTokenModalProps {
   isOpen: boolean;
@@ -11,17 +11,16 @@ interface CreateTokenModalProps {
 }
 
 export function CreateTokenModal({ isOpen, onClose }: CreateTokenModalProps) {
-  const { selectedOrganization } = useAppStore();
   const queryClient = useQueryClient();
   const [newTokenName, setNewTokenName] = useState("");
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
+  const { orgSlug } = useParams({ from: "/$orgSlug/tokens" });
 
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
-      const response = await axios.post("/api/auth-tokens", {
+      const response = await axios.post(`/api/${orgSlug}/auth-tokens`, {
         name,
-        organizationId: selectedOrganization?.id,
       });
       return response.data.token;
     },
@@ -29,7 +28,7 @@ export function CreateTokenModal({ isOpen, onClose }: CreateTokenModalProps) {
       setCreatedToken(token);
       setNewTokenName("");
       queryClient.invalidateQueries({
-        queryKey: ["auth-tokens", selectedOrganization?.id],
+        queryKey: ["auth-tokens", orgSlug],
       });
     },
   });

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@tanstack/react-start";
-import { auth } from "../../lib/auth";
 import { createClient } from "@clickhouse/client";
+
+import { requireOrgFromSlug } from "../../../lib/org";
 
 const clickhouse = createClient({
   url: process.env.CLICKHOUSE_URL || "http://localhost:8123",
@@ -10,36 +11,19 @@ const clickhouse = createClient({
   database: process.env.CLICKHOUSE_DATABASE || "default",
 });
 
-export const Route = createFileRoute("/api/requests")({
+export const Route = createFileRoute("/api/$orgSlug/requests")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session) {
-          return json({ error: "Unauthorized" }, { status: 401 });
-        }
+      GET: async ({ request, params }) => {
+        const orgResult = await requireOrgFromSlug(request, params.orgSlug);
+        if ("error" in orgResult) return orgResult.error;
+        const { organization } = orgResult;
 
         const url = new URL(request.url);
-        const organizationId = url.searchParams.get("organizationId");
         const tunnelId = url.searchParams.get("tunnelId");
         const timeRange = url.searchParams.get("range") || "1h";
         const limit = parseInt(url.searchParams.get("limit") || "100");
         const search = url.searchParams.get("search");
-
-        if (!organizationId) {
-          return json({ error: "Organization ID required" }, { status: 400 });
-        }
-
-        // Verify user has access to this organization
-        const organizations = await auth.api.listOrganizations({
-          headers: request.headers,
-        });
-        const hasAccess = organizations.find(
-          (org) => org.id === organizationId,
-        );
-        if (!hasAccess) {
-          return json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         let interval = "1 HOUR";
         if (timeRange === "24h") {
@@ -49,6 +33,8 @@ export const Route = createFileRoute("/api/requests")({
         } else if (timeRange === "30d") {
           interval = "30 DAY";
         }
+
+        const organizationId = organization.id;
 
         try {
           let query = `
