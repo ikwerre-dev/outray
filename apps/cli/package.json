@@ -40,9 +40,11 @@
     "README.md"
   ],
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@types/prompts": "^2.4.9",
     "chalk": "^4.1.2",
     "http-proxy": "^1.18.1",
+    "joi": "^17.13.3",
     "prompts": "^2.4.2",
     "ws": "^8.18.0"
   },

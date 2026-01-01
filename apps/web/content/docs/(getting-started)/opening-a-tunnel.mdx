@@ -25,6 +25,36 @@ You will see an output similar to this:
 
 Now, anyone with the public URL can access your local server.
 
+## Using Configuration Files
+
+For managing multiple tunnels, you can use a TOML configuration file. Create an `outray/config.toml` file in your project directory:
+
+```toml
+[tunnel.web]
+protocol = "http"
+local_port = 3000
+subdomain = "my-app"
+
+[tunnel.api]
+protocol = "http"
+local_port = 8000
+subdomain = "api"
+```
+
+Then start all tunnels at once:
+
+```bash
+outray start
+```
+
+You can validate your config file before starting:
+
+```bash
+outray validate-config
+```
+
+See the [CLI Reference](/docs/reference/cli-reference#configuration-files) for complete configuration options.
+
 ## Inspecting Traffic
 
 OutRay provides a real-time view of requests and responses in your terminal. As requests come in, you will see the method, path, and status code.
