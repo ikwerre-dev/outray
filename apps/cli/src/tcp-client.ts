@@ -103,7 +103,26 @@ export class TCPTunnelClient {
         }
         console.log(chalk.yellow("🥹 Don't close this or I'll cry softly."));
       } else if (message.type === "error") {
+        const lowerMessage = message.message.toLowerCase();
+        const isPortInUse =
+          message.code === "TCP_TUNNEL_FAILED" &&
+          (lowerMessage.includes("eaddrinuse") ||
+            lowerMessage.includes("address already in use") ||
+            lowerMessage.includes("already in use"));
+
         console.log(chalk.red(`❌ Error: ${message.message}`));
+
+        if (isPortInUse) {
+          console.log(
+            chalk.yellow(
+              "Requested remote TCP port is already in use. Pick a different --remote-port or free the port, then try again.",
+            ),
+          );
+          this.shouldReconnect = false;
+          this.stop();
+          process.exit(1);
+          return;
+        }
         if (
           message.code === "AUTH_FAILED" ||
           message.code === "AUTH_REQUIRED" ||
