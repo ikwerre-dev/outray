@@ -46,9 +46,7 @@ function SelectOrganization() {
             <Link
               key={org.id}
               to="/$orgSlug"
-              params={{
-                orgSlug: org.slug,
-              }}
+              params={{ orgSlug: org.slug }}
               className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all group"
             >
               <div className="flex items-center gap-4">
