@@ -3,6 +3,7 @@ import {
   Outlet,
   Navigate,
   Link,
+  useLocation,
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/$orgSlug")({
 
 function DashboardLayout() {
   const { orgSlug } = Route.useParams();
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: organizations, isPending } = authClient.useListOrganizations();
 
@@ -25,6 +27,13 @@ function DashboardLayout() {
   if (!organizations?.length) {
     return <Navigate to="/onboarding" />;
   }
+
+  // Check if this is a /select/** route - show "Select Organization" instead of "Not Found"
+  const isSelectRoute = orgSlug === "select";
+  // Get the remaining path after /select/ (e.g., /select/billing -> billing)
+  const remainingPath = isSelectRoute
+    ? location.pathname.replace(/^\/select\/?/, "")
+    : "";
 
   if (!isPending && !organizations.find((org) => org.slug === orgSlug)) {
     return (
@@ -40,43 +49,54 @@ function DashboardLayout() {
               </span>
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
-              Organization Not Found
+              {isSelectRoute ? "Select Organization" : "Organization Not Found"}
             </h2>
             <p className="mt-2 text-sm text-gray-400">
-              You don't have access to{" "}
-              <span className="text-white font-medium">{orgSlug}</span>. Please
-              select one of your organizations to continue.
+              {isSelectRoute ? (
+                "Choose an organization to continue to your dashboard."
+              ) : (
+                <>
+                  You don't have access to{" "}
+                  <span className="text-white font-medium">{orgSlug}</span>.
+                  Please select one of your organizations to continue.
+                </>
+              )}
             </p>
           </div>
 
           <div className="space-y-3">
-            {organizations.map((org) => (
-              <Link
-                key={org.id}
-                to="/$orgSlug"
-                params={{
-                  orgSlug: org.slug,
-                }}
-                className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-linear-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-colors">
-                    <span className="text-sm font-bold text-white">
-                      {org.name.charAt(0).toUpperCase()}
-                    </span>
+            {organizations.map((org) => {
+              // For /select routes, preserve the remaining path
+              const targetUrl =
+                isSelectRoute && remainingPath
+                  ? `/${org.slug}/${remainingPath}`
+                  : `/${org.slug}`;
+
+              return (
+                <Link
+                  key={org.id}
+                  to={targetUrl}
+                  className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-linear-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-colors">
+                      <span className="text-sm font-bold text-white">
+                        {org.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-medium text-white group-hover:text-white transition-colors">
+                        {org.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 font-mono">
+                        {org.slug}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h3 className="font-medium text-white group-hover:text-white transition-colors">
-                      {org.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 font-mono">
-                      {org.slug}
-                    </p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors transform group-hover:translate-x-0.5" />
-              </Link>
-            ))}
+                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors transform group-hover:translate-x-0.5" />
+                </Link>
+              );
+            })}
           </div>
 
           <div className="mt-8 text-center">
