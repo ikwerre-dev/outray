@@ -5,7 +5,7 @@ import {
   Link,
   useLocation,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Sidebar } from "@/components/app-sidebar";
 import { ArrowRight } from "lucide-react";
@@ -19,6 +19,18 @@ function DashboardLayout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: organizations, isPending } = authClient.useListOrganizations();
+  const { data: activeOrg } = authClient.useActiveOrganization();
+
+  const matchedOrg = organizations?.find((org) => org.slug === orgSlug);
+
+  // Set the active organization when the orgSlug changes
+  useEffect(() => {
+    if (matchedOrg && activeOrg?.id !== matchedOrg.id) {
+      authClient.organization.setActive({
+        organizationId: matchedOrg.id,
+      });
+    }
+  }, [matchedOrg, activeOrg?.id]);
 
   if (isPending) {
     return null;
@@ -35,7 +47,7 @@ function DashboardLayout() {
     ? location.pathname.replace(/^\/select\/?/, "")
     : "";
 
-  if (!isPending && !organizations.find((org) => org.slug === orgSlug)) {
+  if (!isPending && !matchedOrg) {
     return (
       <div className="min-h-screen bg-[#070707] flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
