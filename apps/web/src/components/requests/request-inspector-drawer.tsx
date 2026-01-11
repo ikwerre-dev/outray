@@ -7,6 +7,7 @@ import { RequestTabContent } from "./request-tab-content";
 import { ResponseTabContent } from "./response-tab-content";
 import { FullCaptureDisabledContent } from "./full-capture-disabled-content";
 import { useRequestCapture } from "./use-request-capture";
+import { ReplayModal } from "./replay-modal";
 
 function SkeletonLoader() {
   return (
@@ -67,7 +68,6 @@ function SkeletonLoader() {
 interface RequestInspectorDrawerProps {
   request: TunnelEvent | null;
   onClose: () => void;
-  onReplay: () => void;
   fullCaptureEnabled: boolean;
   orgSlug: string;
 }
@@ -75,12 +75,12 @@ interface RequestInspectorDrawerProps {
 export function RequestInspectorDrawer({
   request,
   onClose,
-  onReplay,
   fullCaptureEnabled,
   orgSlug,
 }: RequestInspectorDrawerProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("request");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showReplayModal, setShowReplayModal] = useState(false);
   
   const { capture, loading, error } = useRequestCapture(orgSlug, request);
 
@@ -184,7 +184,7 @@ export function RequestInspectorDrawer({
                 ) : (
                   <>
                     <button
-                      onClick={onReplay}
+                      onClick={() => setShowReplayModal(true)}
                       disabled={!capture}
                       className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-colors"
                     >
@@ -299,6 +299,17 @@ export function RequestInspectorDrawer({
               </div>
             </div>
           </motion.div>
+
+          {/* Replay Modal */}
+          {capture && (
+            <ReplayModal
+              isOpen={showReplayModal}
+              onClose={() => setShowReplayModal(false)}
+              request={request}
+              capture={capture}
+              orgSlug={orgSlug}
+            />
+          )}
         </>
       )}
     </AnimatePresence>
