@@ -11,8 +11,9 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 100);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Check initial state
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -37,7 +38,7 @@ export const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-black/80 backdrop-blur-md border-b border-white/5 py-4"
+          ? "bg-[#000000] border-b border-white/10 py-4"
           : "bg-transparent py-6"
       }`}
     >
@@ -107,7 +108,7 @@ export const Navbar = () => {
 
       {/* Mobile menu - full height with animation */}
       <div
-        className={`md:hidden fixed inset-0 top-0 bg-black z-50 transition-all duration-300 ease-in-out ${
+        className={`md:hidden fixed inset-0 bg-[#000000] z-[60] transition-all duration-300 ease-in-out ${
           mobileMenuOpen
             ? "opacity-100 translate-x-0"
             : "opacity-0 translate-x-full pointer-events-none"
