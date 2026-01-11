@@ -5,6 +5,7 @@ dist/
 .env
 .env.local
 .output
+.vscode
 
 # Local database files
 data/
