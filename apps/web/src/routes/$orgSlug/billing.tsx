@@ -27,8 +27,8 @@ export const Route = createFileRoute("/$orgSlug/billing")({
 
 function BillingView() {
   const { orgSlug } = Route.useParams();
-  const { selectedOrganization } = useAppStore();
-  const selectedOrganizationId = selectedOrganization?.id;
+const {data:orgs, isPending:loadingOrgs}=authClient.useListOrganizations();
+  const selectedOrganizationId = orgs?.find((org)=>org.slug==orgSlug)?.id
   const { success } = Route.useSearch();
   const [alertState, setAlertState] = useState<{
     isOpen: boolean;
@@ -47,14 +47,8 @@ function BillingView() {
       billing: ["manage"],
     });
 
-  const { data: session, isPending: isSessionLoading } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const { data } = await authClient.getSession();
-      return data;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { data: session, isPending: isSessionLoading } =
+    authClient.useSession();
 
   const { data, isLoading } = useQuery({
     queryKey: ["subscription", orgSlug],
