@@ -66,7 +66,11 @@ export class UDPProxy {
 
       socket.on("error", (err) => {
         console.error(`UDP Socket error for tunnel ${tunnelId}:`, err);
-        this.portAllocator.release(port);
+        socket.close(() => {
+          this.tunnels.delete(tunnelId);
+          this.portAllocator.release(port);
+          resolve({ success: false, error: err.message });
+        });
         resolve({ success: false, error: err.message });
       });
 
